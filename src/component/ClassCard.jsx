@@ -11,7 +11,7 @@ export default function ClassCard({ item, now }) {
         : "bg-amber-500/20 text-amber-300";
 
   return (
-    <div className="grid grid-cols-[120px_1fr_240px] items-center gap-4 rounded-2xl border border-white/10 bg-black/40 px-6 py-5 backdrop-blur-md">
+    <div className="grid grid-cols-[120px_1fr_240px] items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-6 py-5 backdrop-blur-md">
       <div className="text-2xl font-bold tabular-nums text-white">
         {formatTime(item.start)}
       </div>

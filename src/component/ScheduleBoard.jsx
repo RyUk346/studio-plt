@@ -24,6 +24,7 @@ export default function ScheduleBoard() {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    hour12: true,
   });
 
   if (loading) {
@@ -45,7 +46,7 @@ export default function ScheduleBoard() {
   return (
     <div className="flex min-h-screen w-screen items-center justify-center text-white">
       {/* Centered container */}
-      <div className="w-full max-w-5xl px-6">
+      <div className="w-full max-w-480 px-6">
         {/* Header */}
         <header className="mb-8 rounded-3xl border border-white/10 bg-black/30 p-6  backdrop-blur-md flex justify-between">
           <div>
