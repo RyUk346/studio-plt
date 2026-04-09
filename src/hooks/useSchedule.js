@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { isToday } from "../utils/date";
+import { isToday, isClassFinished } from "../utils/date";
 
 export default function useSchedule() {
   const [classes, setClasses] = useState([]);
@@ -15,9 +15,11 @@ export default function useSchedule() {
       }
 
       const data = await res.json();
+      const now = new Date();
 
       const filtered = data
         .filter((item) => isToday(item.start))
+        .filter((item) => !isClassFinished(item.end, now))
         .sort((a, b) => new Date(a.start) - new Date(b.start));
 
       setClasses(filtered);

@@ -50,19 +50,28 @@ export default function ScheduleBoard() {
         {/* Header */}
         <header className="mb-8 rounded-3xl border border-white/10 bg-black/30 p-6  backdrop-blur-md flex justify-between">
           <div>
-            <h1 className="text-5xl font-black tracking-wide">STUDIO PLT</h1>
-            <p className="mt-2 text-lg text-white/70">Today’s class schedule</p>
+            {/* <img
+              src="/public/Studio-PLT-Logo-White.svg"
+              alt=""
+              className="w-50"
+            /> */}
+            <video className="w-120 -ml-20" autoPlay loop muted playsInline>
+              <source src="/PLT_Logo.webm" type="video/mp4" />
+            </video>
+            <p className="mt-2 text-3xl font-bold text-white/70">
+              Today’s class schedule
+            </p>
           </div>
 
-          <div className="mt-4">
-            <div className="text-lg text-white/80">{currentDate}</div>
-            <div className="text-3xl font-bold tabular-nums">{currentTime}</div>
+          <div className="mt-4 flex flex-col justify-center text-end">
+            <div className="text-3xl text-white/80">{currentDate}</div>
+            <div className="text-6xl font-bold tabular-nums">{currentTime}</div>
           </div>
         </header>
 
         {/* Classes */}
         {classes.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-black/30 p-10 text-center text-2xl text-white/70 backdrop-blur-md">
+          <div className="rounded-6xl border border-white/10 bg-black/30 p-10 text-center text-2xl text-white/70 backdrop-blur-md">
             No classes scheduled for today
           </div>
         ) : (
