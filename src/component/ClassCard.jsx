@@ -11,13 +11,13 @@ export default function ClassCard({ item, now }) {
         : "bg-amber-500/20 text-amber-300";
 
   return (
-    <div className="grid grid-cols-[220px_1fr_240px] items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-6 py-5 backdrop-blur-md">
-      <div className="text-4xl font-bold tabular-nums text-white">
+    <div className="grid grid-cols-[220px_1fr_240px] items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-6 py-2 backdrop-blur-md shadow-[0_20px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.6)]">
+      <div className="text-2xl font-bold tabular-nums text-white">
         {formatTime(item.start)}
       </div>
 
       <div>
-        <div className="text-4xl font-semibold text-white">{item.title}</div>
+        <div className="text-2xl font-semibold text-white">{item.title}</div>
         <div className="mt-1 text-2xl text-white/70">
           {item.instructor || "Instructor TBC"}
         </div>
@@ -29,7 +29,7 @@ export default function ClassCard({ item, now }) {
         >
           {timing.label}
         </div>
-        <div className="mt-2 text-2xl text-white/60">
+        <div className="mt-2 text-xl text-white/60">
           {item.location || "Studio PLT"}
         </div>
       </div>

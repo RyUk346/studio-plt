@@ -29,7 +29,7 @@ export default function ScheduleBoard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-3xl text-white">
+      <div className="flex min-h-screen items-center justify-center text-xl text-white">
         Loading today’s class schedule...
       </div>
     );
@@ -44,34 +44,37 @@ export default function ScheduleBoard() {
   }
 
   return (
-    <div className="flex min-h-screen w-screen items-center justify-center text-white">
+    <div className="flex min-h-screen w-1/3 items-center justify-center bg-black/40 text-white shadow-[0_20px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.6)]">
       {/* Centered container */}
       <div className="w-full max-w-480 px-6">
         {/* Header */}
-        <header className="mb-8 rounded-3xl border border-white/10 bg-black/30 p-6  backdrop-blur-md flex justify-between">
+        <header
+          className="mb-8 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-md flex justify-between items-center
+      shadow-[0_20px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.6)]"
+        >
+          <p className="mt-2 text-xl font-bold text-white/70">
+            Today’s class schedule
+          </p>
           <div>
             {/* <img
               src="/public/Studio-PLT-Logo-White.svg"
               alt=""
               className="w-50"
             /> */}
-            <video className="w-120 -ml-20" autoPlay loop muted playsInline>
+            <video className="w-60 -ml-8" autoPlay loop muted playsInline>
               <source src="/PLT_Logo.webm" type="video/mp4" />
             </video>
-            <p className="mt-2 text-3xl font-bold text-white/70">
-              Today’s class schedule
-            </p>
           </div>
 
           <div className="mt-4 flex flex-col justify-center text-end">
-            <div className="text-3xl text-white/80">{currentDate}</div>
-            <div className="text-6xl font-bold tabular-nums">{currentTime}</div>
+            <div className="text-xl text-white/80">{currentDate}</div>
+            <div className="text-3xl font-bold tabular-nums">{currentTime}</div>
           </div>
         </header>
 
         {/* Classes */}
         {classes.length === 0 ? (
-          <div className="rounded-6xl border border-white/10 bg-black/30 p-10 text-center text-2xl text-white/70 backdrop-blur-md">
+          <div className="rounded-3xl border border-white/10 bg-black/30 p-10 text-center text-2xl text-white/70 backdrop-blur-md">
             No classes scheduled for today
           </div>
         ) : (

@@ -5,7 +5,7 @@ export default function DaySection({ date, items }) {
   return (
     <section className="space-y-4">
       <div className="sticky top-0 z-10 rounded-xl bg-black/40 px-4 py-3 backdrop-blur">
-        <h2 className="text-2xl font-bold tracking-wide text-yellow-300">
+        <h2 className="text-xl font-bold tracking-wide text-yellow-300">
           {formatDayLabel(date)}
         </h2>
       </div>

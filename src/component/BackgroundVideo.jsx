@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const videos = ["/bg.mp4", "/bg_1.mp4", "/bg_2.mp4"];
+const videos = ["/bg.webm", "/bg_1.webm", "/bg_2.webm"];
 
 export default function BackgroundVideo() {
   const videoRef = useRef(null);
@@ -59,7 +59,7 @@ export default function BackgroundVideo() {
         <source src={videos[index]} type="video/mp4" />
       </video>
 
-      <div className="absolute inset-0 bg-black/40" />
+      {/* <div className="absolute inset-0 bg-black/40" /> */}
     </div>
   );
 }
