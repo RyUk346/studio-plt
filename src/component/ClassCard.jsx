@@ -11,27 +11,21 @@ export default function ClassCard({ item, now }) {
         : "bg-amber-500/20 text-amber-300";
 
   return (
-    <div className="grid grid-cols-[220px_1fr_240px] items-center gap-4 rounded-2xl border border-white/10 bg-white/10 px-6 py-2 backdrop-blur-md shadow-[0_20px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.6)]">
-      <div className="text-2xl font-bold tabular-nums text-white">
-        {formatTime(item.start)}
-      </div>
-
-      <div>
-        <div className="text-2xl font-semibold text-white">{item.title}</div>
-        <div className="mt-1 text-2xl text-white/70">
-          {item.instructor || "Instructor TBC"}
+    <div className="min-w-[320px] flex-shrink-0 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
+      <div className="flex items-center justify-between">
+        <div className="text-lg font-bold text-white">
+          {formatTime(item.start)}
         </div>
-      </div>
 
-      <div className="text-right">
-        <div
-          className={`inline-block rounded-full px-4 py-2 text-xl font-semibold ${badgeClasses}`}
-        >
+        <div className={`rounded-full px-3 py-1 text-xs ${badgeClasses}`}>
           {timing.label}
         </div>
-        <div className="mt-2 text-xl text-white/60">
-          {item.location || "Studio PLT"}
-        </div>
+      </div>
+
+      <div className="mt-2 text-lg font-semibold text-white">{item.title}</div>
+
+      <div className="mt-1 text-sm text-white/70">
+        {item.instructor || "Instructor"}
       </div>
     </div>
   );

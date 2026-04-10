@@ -20,8 +20,8 @@ export default function ScheduleBoard() {
     year: "numeric",
   });
 
-  const currentTime = now.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
+  const currentTime = now.toLocaleTimeString("en-US", {
+    hour: "numeric",
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
@@ -29,7 +29,7 @@ export default function ScheduleBoard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-xl text-white">
+      <div className="flex min-h-screen items-center justify-center text-3xl text-white">
         Loading today’s class schedule...
       </div>
     );
@@ -44,46 +44,42 @@ export default function ScheduleBoard() {
   }
 
   return (
-    <div className="flex min-h-screen w-1/3 items-center justify-center bg-black/40 text-white shadow-[0_20px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.6)]">
-      {/* Centered container */}
-      <div className="w-full max-w-480 px-6">
+    <div className="min-h-screen w-screen text-white">
+      {/* Top-aligned container */}
+      <div className="mx-auto w-full max-w-6xl px-6 py-6">
         {/* Header */}
-        <header
-          className="mb-8 rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-md flex justify-between items-center
-      shadow-[0_20px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.6)]"
-        >
-          <p className="mt-2 text-xl font-bold text-white/70">
-            Today’s class schedule
-          </p>
-          <div>
-            {/* <img
-              src="/public/Studio-PLT-Logo-White.svg"
-              alt=""
-              className="w-50"
-            /> */}
-            <video className="w-60 -ml-8" autoPlay loop muted playsInline>
-              <source src="/PLT_Logo.webm" type="video/mp4" />
-            </video>
-          </div>
+        <header className="mb-6 rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-black tracking-wide">STUDIO PLT</h1>
+              <p className="mt-1 text-sm text-white/70">
+                Today’s class schedule
+              </p>
+            </div>
 
-          <div className="mt-4 flex flex-col justify-center text-end">
-            <div className="text-xl text-white/80">{currentDate}</div>
-            <div className="text-3xl font-bold tabular-nums">{currentTime}</div>
+            <div className="text-right">
+              <div className="text-sm text-white/70">{currentDate}</div>
+              <div className="text-2xl font-bold tabular-nums">
+                {currentTime}
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Classes */}
-        {classes.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-black/30 p-10 text-center text-2xl text-white/70 backdrop-blur-md">
-            No classes scheduled for today
+        {/* One column list */}
+        <div className="overflow-x-auto w-full">
+          <div className="flex gap-4">
+            {classes.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-6 text-white/70">
+                No classes today
+              </div>
+            ) : (
+              classes.map((item) => (
+                <ClassCard key={item.id} item={item} now={now} />
+              ))
+            )}
           </div>
-        ) : (
-          <div className="space-y-4">
-            {classes.map((item) => (
-              <ClassCard key={item.id} item={item} now={now} />
-            ))}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
