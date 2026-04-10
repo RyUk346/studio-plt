@@ -90,7 +90,7 @@ export default function ScheduleBoard() {
             {/* Logo + Title */}
             <div className="flex h-full min-w-[220px] flex-col items-start justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
               <div>
-                <video
+                {/* <video
                   className="mb-4 -ml-20 h-16 w-80 object-contain drop-shadow-[0_10px_20px_rgba(255,255,255,0.15)]"
                   autoPlay
                   loop
@@ -98,7 +98,7 @@ export default function ScheduleBoard() {
                   playsInline
                 >
                   <source src="/PLT_Logo.webm" type="video/webm" />
-                </video>
+                </video> */}
               </div>
 
               <div className="mt-2 text-3xl font-bold leading-tight">

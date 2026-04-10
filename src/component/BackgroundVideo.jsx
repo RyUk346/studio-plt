@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const videos = ["/bg.webm", "/bg_1.webm", "/bg_2.webm"];
+const videos = [];
 
 export default function BackgroundVideo() {
   const videoRef = useRef(null);
