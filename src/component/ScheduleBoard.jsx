@@ -31,7 +31,7 @@ export default function ScheduleBoard() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-3xl text-white">
-        Loading today’s class schedule...
+        Refreshing today’s class schedule...
       </div>
     );
   }
@@ -45,10 +45,10 @@ export default function ScheduleBoard() {
   }
 
   return (
-    <div className="min-h-screen w-screen p-6 text-white">
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-3 gap-6">
+    <div className="min-h-screen w-screen p-2 text-white">
+      <div className="grid min-h-[calc(100vh-48px)] grid-cols-4 gap-6">
         {/* Left 1/3 - Leaderboard */}
-        {/* <div className="col-span-1 h-full rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-md">
+        <div className="col-span-1 h-full rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-md">
           <div className="flex h-full flex-col">
             <div className="border-b border-white/10 pb-4">
               <h2 className="text-3xl font-bold tracking-wide">Leaderboard</h2>
@@ -82,15 +82,15 @@ export default function ScheduleBoard() {
               </div>
             </div>
           </div>
-        </div> */}
+        </div>
 
         {/* Right 2/3 - Routine */}
-        <div className="col-span-3 h-56 rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur-md">
+        <div className="col-span-3 h-40 rounded-3xl border border-white/10 bg-black/25 p-3 backdrop-blur-md">
           <div className="flex h-full items-stretch gap-4">
             {/* Logo + Title */}
-            <div className="flex h-full w-10 lg:min-w-[220px] flex-col items-start justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
+            {/* <div className="flex h-full min-w-[220px] flex-col items-start justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
               <div>
-                {/* <video
+                <video
                   className="mb-4 -ml-20 h-16 w-80 object-contain drop-shadow-[0_10px_20px_rgba(255,255,255,0.15)]"
                   autoPlay
                   loop
@@ -98,13 +98,13 @@ export default function ScheduleBoard() {
                   playsInline
                 >
                   <source src="/PLT_Logo.webm" type="video/webm" />
-                </video> */}
+                </video>
               </div>
 
-              <div className="mt-2 text-md xl:text-3xl font-bold leading-tight">
+              <div className="mt-2 text-3xl font-bold leading-tight">
                 Class Routine
               </div>
-            </div>
+            </div> */}
 
             {/* Routine */}
             <div className="h-full flex-1 overflow-hidden">
@@ -124,9 +124,9 @@ export default function ScheduleBoard() {
             </div>
 
             {/* Time + Date */}
-            <div className="flex h-full w-10 lg:min-w-[220px] flex-col items-end justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-right">
+            <div className="flex h-full min-w-[220px] flex-col items-end justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-right">
               <div className="text-sm text-white/60">{currentDate}</div>
-              <div className="mt-2 text-md xl:text-3xl font-bold tabular-nums">
+              <div className="mt-2 text-3xl font-bold tabular-nums">
                 {currentTime}
               </div>
             </div>
