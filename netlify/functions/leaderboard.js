@@ -4,7 +4,7 @@ export default async (req) => {
     const sheetId =
       req.queryStringParameters?.sheetId ||
       "1j_ya2A8-hyTsR53BZh-pj9jp1163t6tGA2fBjDXmCaM";
-    const tabName = req.queryStringParameters?.tabName || "Sheet1";
+    const tabName = req.queryStringParameters?.tabName || "Leaderboard";
 
     if (!apiKey) {
       return new Response(
@@ -47,9 +47,9 @@ export default async (req) => {
     }
 
     const headers = rows[0].map((h) => String(h).trim());
-    const firstNameIndex = headers.indexOf("First Name");
-    const lastNameIndex = headers.indexOf("Last Name");
-    const visitsIndex = headers.indexOf("Total Visits");
+    const firstNameIndex = headers.indexOf("First name");
+    const lastNameIndex = headers.indexOf("Last name");
+    const visitsIndex = headers.indexOf("Total visits");
 
     if (firstNameIndex === -1 || lastNameIndex === -1 || visitsIndex === -1) {
       return new Response(
