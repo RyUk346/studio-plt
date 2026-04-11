@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import useSchedule from "../hooks/useSchedule";
 import ClassCard from "./ClassCard";
+import useLeaderboard from "../hooks/useLeaderboard";
 
 export default function ScheduleBoard() {
   const { classes, loading, error } = useSchedule();
   const [now, setNow] = useState(new Date());
+  const {
+    leaders,
+    loading: leaderLoading,
+    error: leaderError,
+  } = useLeaderboard();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -52,34 +58,39 @@ export default function ScheduleBoard() {
           <div className="flex h-full flex-col">
             <div className="border-b border-white/10 pb-4">
               <h2 className="text-3xl font-bold tracking-wide">Leaderboard</h2>
-              <p className="mt-1 text-sm text-white/60">Top performers</p>
+              <p className="mt-1 text-sm text-white/60">
+                Top members by total visits
+              </p>
             </div>
 
-            <div className="mt-6 flex-1 space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-sm text-white/50">1st Place</div>
-                <div className="mt-1 text-2xl font-semibold">Ava</div>
-              </div>
+            <div className="mt-6 flex-1 space-y-4 overflow-y-auto">
+              {leaderLoading ? (
+                <div className="text-white/70">Loading leaderboard...</div>
+              ) : leaderError ? (
+                <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-4 text-red-300">
+                  {leaderError}
+                </div>
+              ) : leaders.length === 0 ? (
+                <div className="text-white/70">No leaderboard data found</div>
+              ) : (
+                leaders.map((item) => (
+                  <div
+                    key={item.rank}
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-white/50">#{item.rank}</div>
+                      <div className="text-sm text-white/50">
+                        {item.visits} visits
+                      </div>
+                    </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-sm text-white/50">2nd Place</div>
-                <div className="mt-1 text-2xl font-semibold">Sophia</div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-sm text-white/50">3rd Place</div>
-                <div className="mt-1 text-2xl font-semibold">Mia</div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-sm text-white/50">4th Place</div>
-                <div className="mt-1 text-2xl font-semibold">Ella</div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                <div className="text-sm text-white/50">5th Place</div>
-                <div className="mt-1 text-2xl font-semibold">Grace</div>
-              </div>
+                    <div className="mt-2 text-2xl font-semibold text-white">
+                      {item.name}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -107,14 +118,14 @@ export default function ScheduleBoard() {
             </div> */}
 
             {/* Routine */}
-            <div className="h-full flex-1 overflow-hidden">
+            <div className="h-full flex-1 overflow-hidden ">
               {classes.length === 0 ? (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
                   No classes today
                 </div>
               ) : (
-                <div className="h-full overflow-x-auto overflow-y-hidden">
-                  <div className="flex h-full gap-4 pr-2">
+                <div className="h-full overflow-x-auto overflow-y-hidden ">
+                  <div className="flex h-full gap-4 pr-2 justify-end">
                     {classes.map((item) => (
                       <ClassCard key={item.id} item={item} now={now} />
                     ))}
