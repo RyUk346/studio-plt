@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const SHEET_ID = "1j_ya2A8-hyTsR53BZh-pj9jp1163t6tGA2fBjDXmCaM";
-const TAB_NAME = "Leaderboard"; // change this if your tab name is different
+const TAB_NAME = "Leaderboard";
 
 export default function useLeaderboard() {
   const [leaders, setLeaders] = useState([]);
@@ -18,7 +18,10 @@ export default function useLeaderboard() {
         const res = await fetch(url);
 
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status} ${res.statusText}`);
+          const errorData = await res.json().catch(() => null);
+          throw new Error(
+            errorData?.error || `HTTP ${res.status} ${res.statusText}`,
+          );
         }
 
         const data = await res.json();

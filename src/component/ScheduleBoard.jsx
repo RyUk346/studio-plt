@@ -52,9 +52,9 @@ export default function ScheduleBoard() {
 
   return (
     <div className="min-h-screen w-screen p-2 text-white">
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-4 gap-6">
+      <div className="grid min-h-[calc(100vh-48px)] grid-cols-4 gap-2">
         {/* Left 1/3 - Leaderboard */}
-        <div className="col-span-1 h-full rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-md">
+        <div className="col-span-1 h-full rounded-3xl border border-white/10 bg-black/30 p-2 backdrop-blur-md">
           <div className="flex h-full flex-col">
             <div className="border-b border-white/10 pb-4">
               <h2 className="text-3xl font-bold tracking-wide">Leaderboard</h2>
@@ -73,7 +73,7 @@ export default function ScheduleBoard() {
               ) : leaders.length === 0 ? (
                 <div className="text-white/70">No leaderboard data found</div>
               ) : (
-                leaders.map((item) => (
+                leaders.slice(0, 10).map((item) => (
                   <div
                     key={item.rank}
                     className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
@@ -96,7 +96,7 @@ export default function ScheduleBoard() {
         </div>
 
         {/* Right 2/3 - Routine */}
-        <div className="col-span-3 h-40 rounded-3xl border border-white/10 bg-black/25 p-3 backdrop-blur-md">
+        <div className="col-span-3 h-40 rounded-3xl border border-white/10 bg-black/25 p-2 backdrop-blur-md">
           <div className="flex h-full items-stretch gap-4">
             {/* Logo + Title */}
             {/* <div className="flex h-full min-w-[220px] flex-col items-start justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
