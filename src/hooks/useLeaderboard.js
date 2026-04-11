@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 
-const SHEET_ID = "1j_ya2A8-hyTsR53BZh-pj9jp1163t6tGA2fBjDXmCaM";
-const TAB_NAME = "Leaderboard";
-
 export default function useLeaderboard() {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,11 +8,7 @@ export default function useLeaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const url = `/.netlify/functions/leaderboard?sheetId=${encodeURIComponent(
-          SHEET_ID,
-        )}&tabName=${encodeURIComponent(TAB_NAME)}`;
-
-        const res = await fetch(url);
+        const res = await fetch("/.netlify/functions/sheets?type=leaderboard");
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => null);

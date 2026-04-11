@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
-import useSchedule from "../hooks/useSchedule";
 import ClassCard from "./ClassCard";
 import useLeaderboard from "../hooks/useLeaderboard";
+import useRoutine from "../hooks/useRoutine";
 
 export default function ScheduleBoard() {
-  const { classes, loading, error } = useSchedule();
-  const [now, setNow] = useState(new Date());
+  const { classes, loading, error } = useRoutine();
   const {
     leaders,
     loading: leaderLoading,
     error: leaderError,
   } = useLeaderboard();
+
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -34,10 +35,12 @@ export default function ScheduleBoard() {
     hour12: true,
   });
 
+  const visibleClasses = classes.filter((item) => new Date(item.end) > now);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-3xl text-white">
-        Refreshing today’s class schedule...
+        Loading today’s class schedule...
       </div>
     );
   }
@@ -52,8 +55,7 @@ export default function ScheduleBoard() {
 
   return (
     <div className="min-h-screen w-screen p-2 text-white">
-      <div className="grid min-h-[calc(100vh-48px)] grid-cols-4 gap-2">
-        {/* Left 1/3 - Leaderboard */}
+      <div className="grid min-h-[calc(100vh-48px)] grid-cols-3 gap-4">
         <div className="col-span-1 h-full rounded-3xl border border-white/10 bg-black/30 p-2 backdrop-blur-md">
           <div className="flex h-full flex-col">
             <div className="border-b border-white/10 pb-4">
@@ -63,7 +65,7 @@ export default function ScheduleBoard() {
               </p>
             </div>
 
-            <div className="mt-6 flex-1 space-y-4 overflow-y-auto">
+            <div className="mt-6 flex-1 space-y-3 overflow-y-auto">
               {leaderLoading ? (
                 <div className="text-white/70">Loading leaderboard...</div>
               ) : leaderError ? (
@@ -73,32 +75,74 @@ export default function ScheduleBoard() {
               ) : leaders.length === 0 ? (
                 <div className="text-white/70">No leaderboard data found</div>
               ) : (
-                leaders.slice(0, 10).map((item) => (
-                  <div
-                    key={item.rank}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-white/50">#{item.rank}</div>
-                      <div className="text-sm text-white/50">
-                        {item.visits} visits
+                leaders.slice(0, 10).map((item) => {
+                  const isFirst = item.rank === 1;
+                  const isSecond = item.rank === 2;
+                  const isThird = item.rank === 3;
+
+                  const cardBg = isFirst
+                    ? "bg-yellow-500/15 border-yellow-400/30 shadow-[0_0_25px_rgba(255,215,0,0.18)]"
+                    : isSecond
+                      ? "bg-slate-300/10 border-slate-300/30 shadow-[0_0_20px_rgba(200,200,200,0.12)]"
+                      : isThird
+                        ? "bg-orange-500/10 border-orange-400/30 shadow-[0_0_20px_rgba(205,127,50,0.16)]"
+                        : "bg-white/5 border-white/10";
+
+                  const rankBg = isFirst
+                    ? "bg-yellow-400/30 text-black"
+                    : isSecond
+                      ? "bg-slate-300/30 text-black"
+                      : isThird
+                        ? "bg-orange-400/30 text-black"
+                        : "bg-white/10 text-white";
+
+                  const visitBg = isFirst
+                    ? "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30"
+                    : isSecond
+                      ? "bg-slate-300/20 text-slate-200 border border-slate-300/30"
+                      : isThird
+                        ? "bg-orange-400/20 text-orange-300 border border-orange-400/30"
+                        : "bg-white/10 text-white/70 border border-white/10";
+
+                  return (
+                    <div
+                      key={item.rank}
+                      className={`rounded-2xl border px-4 py-4 backdrop-blur-md ${cardBg}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-center gap-4">
+                          <div
+                            className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${rankBg}`}
+                          >
+                            {item.rank === 1
+                              ? "🥇"
+                              : item.rank === 2
+                                ? "🥈"
+                                : item.rank === 3
+                                  ? "🥉"
+                                  : item.rank}
+                          </div>
+                          <div className="text-xl font-semibold leading-tight text-white">
+                            {item.name}
+                          </div>
+                        </div>
+
+                        <div
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${visitBg}`}
+                        >
+                          {item.visits} visits
+                        </div>
                       </div>
                     </div>
-
-                    <div className="mt-2 text-2xl font-semibold text-white">
-                      {item.name}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
         </div>
 
-        {/* Right 2/3 - Routine */}
-        <div className="col-span-3 h-40 rounded-3xl border border-white/10 bg-black/25 p-2 backdrop-blur-md">
-          <div className="flex h-full items-stretch gap-4">
-            {/* Logo + Title */}
+        <div className="col-span-2 h-36 rounded-3xl border border-white/10 bg-black/25 p-2 backdrop-blur-md">
+          <div className="flex h-full items-stretch gap-2">
             {/* <div className="flex h-full min-w-[220px] flex-col items-start justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
               <div>
                 <video
@@ -117,16 +161,15 @@ export default function ScheduleBoard() {
               </div>
             </div> */}
 
-            {/* Routine */}
-            <div className="h-full flex-1 overflow-hidden ">
-              {classes.length === 0 ? (
-                <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-white/70">
+            <div className="h-full flex-1 overflow-hidden justify-end">
+              {visibleClasses.length === 0 ? (
+                <div className="flex h-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-2 text-center text-white/70">
                   No classes today
                 </div>
               ) : (
-                <div className="h-full overflow-x-auto overflow-y-hidden ">
-                  <div className="flex h-full gap-4 pr-2 justify-end">
-                    {classes.map((item) => (
+                <div className="hide-scrollbar h-full overflow-x-auto overflow-y-hidden">
+                  <div className="flex h-full gap-2 pr-2 justify-end">
+                    {visibleClasses.map((item) => (
                       <ClassCard key={item.id} item={item} now={now} />
                     ))}
                   </div>
@@ -134,7 +177,6 @@ export default function ScheduleBoard() {
               )}
             </div>
 
-            {/* Time + Date */}
             <div className="flex h-full min-w-[220px] flex-col items-end justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-right">
               <div className="text-sm text-white/60">{currentDate}</div>
               <div className="mt-2 text-3xl font-bold tabular-nums">
