@@ -76,7 +76,7 @@ export default function ScheduleBoard() {
                 leaders.slice(0, 10).map((item) => (
                   <div
                     key={item.rank}
-                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4"
+                    className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-white/50">#{item.rank}</div>
