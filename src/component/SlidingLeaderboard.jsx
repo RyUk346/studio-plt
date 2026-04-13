@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const ITEMS_PER_PAGE = 10;
-const SLIDE_INTERVAL_MS = 5000;
+const SLIDE_INTERVAL_MS = 10000;
 
 export default function SlidingLeaderboard({ leaders }) {
   const pages = useMemo(() => {
@@ -81,13 +81,13 @@ export default function SlidingLeaderboard({ leaders }) {
                               ? "🥉"
                               : item.rank}
                       </div>
-                      <div className="text-xl font-semibold leading-tight text-white">
+                      <div className="text-2xl font-semibold leading-tight text-white">
                         {item.name}
                       </div>
                     </div>
 
                     <div
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${visitBg}`}
+                      className={`rounded-full px-3 py-1 text-xs font-lg ${visitBg}`}
                     >
                       {item.visits} visits
                     </div>

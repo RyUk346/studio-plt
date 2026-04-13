@@ -71,6 +71,7 @@ export default function QuoteFormPage() {
 
           <textarea
             placeholder="Write your quote"
+            maxLength={120}
             value={quote}
             onChange={(e) => setQuote(e.target.value)}
             className="h-32 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
