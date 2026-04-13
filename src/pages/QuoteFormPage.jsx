@@ -1,4 +1,6 @@
 import { useState } from "react";
+import studioPlt from "../../public/Studio-PLT-Logo-grey.svg";
+import HGlogo from "../../public/hyperglow-logo.png.webp";
 
 const QUOTE_MAX_LENGTH = 200;
 const WARNING_THRESHOLD = 25;
@@ -52,15 +54,11 @@ export default function QuoteFormPage() {
   return (
     <div className="flex flex-col min-h-screen items-center justify-center bg-gray-200 px-4 text-black">
       <div className="flex justify-between items-center gap-4 mb-4">
-        <img src="/public/Studio-PLT-Logo-grey.svg" alt="" className="w-15 " />
+        <img src={studioPlt} alt="" className="w-15 " />
         <div className="flex gap-2 justify-center items-center mt-4">
           <h2>Powered By,</h2>
           <a href="https://hyperglow.co.uk/">
-            <img
-              src="/public/hyperglow-logo.png.webp"
-              alt=""
-              className="w-40"
-            />
+            <img src={HGlogo} alt="" className="w-40" />
           </a>
         </div>
       </div>
