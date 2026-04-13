@@ -26,13 +26,13 @@ export const formatDuration = (ms) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  // const seconds = totalSeconds % 60;
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return `${hours}h ${minutes}m `;
   }
 
-  return `${minutes}m ${seconds}s`;
+  return `${minutes}m `;
 };
 
 export const getClassTimingState = (
@@ -46,7 +46,7 @@ export const getClassTimingState = (
   if (now < start) {
     return {
       state: "scheduled",
-      label: `Starts in ${formatDuration(start - now)}`,
+      // label: `Starts in ${formatDuration(start - now)}`,
     };
   }
 

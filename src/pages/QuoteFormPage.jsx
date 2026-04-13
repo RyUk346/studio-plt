@@ -1,11 +1,18 @@
 import { useState } from "react";
 
+const QUOTE_MAX_LENGTH = 200;
+const WARNING_THRESHOLD = 25;
+
 export default function QuoteFormPage() {
   const [displayName, setDisplayName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [quote, setQuote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+
+  const remainingChars = QUOTE_MAX_LENGTH - quote.length;
+  const isNearLimit = remainingChars <= WARNING_THRESHOLD;
+  const isAtLimit = remainingChars <= 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -43,12 +50,25 @@ export default function QuoteFormPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-white">
+    <div className="flex flex-col min-h-screen items-center justify-center bg-gray-200 px-4 text-black">
+      <div className="flex justify-between items-center gap-4 mb-4">
+        <img src="/public/Studio-PLT-Logo-grey.svg" alt="" className="w-15 " />
+        <div className="flex gap-2 justify-center items-center mt-4">
+          <h2>Powered By,</h2>
+          <a href="https://hyperglow.co.uk/">
+            <img
+              src="/public/hyperglow-logo.png.webp"
+              alt=""
+              className="w-40"
+            />
+          </a>
+        </div>
+      </div>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-md"
+        className="w-full max-w-xl rounded-3xl border border-black/10 bg-gray-300 p-4"
       >
-        <h1 className="text-3xl font-bold">Submit Your Quote</h1>
+        <h1 className="text-2xl font-bold text-center">Submit Your Quote</h1>
 
         <div className="mt-6 space-y-4">
           <input
@@ -56,7 +76,7 @@ export default function QuoteFormPage() {
             placeholder="Display Name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
+            className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
             required
           />
 
@@ -65,29 +85,49 @@ export default function QuoteFormPage() {
             placeholder="Phone Number"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
+            className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
             required
           />
 
-          <textarea
-            placeholder="Write your quote"
-            maxLength={120}
-            value={quote}
-            onChange={(e) => setQuote(e.target.value)}
-            className="h-32 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none"
-            required
-          />
+          <div>
+            <textarea
+              placeholder="Write your quote"
+              value={quote}
+              onChange={(e) => setQuote(e.target.value)}
+              maxLength={QUOTE_MAX_LENGTH}
+              className="h-32 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
+              required
+            />
+
+            <div className="mt-2 flex items-center justify-between">
+              <div className="text-xs text-black/50">
+                Maximum {QUOTE_MAX_LENGTH} characters
+              </div>
+
+              <div
+                className={`text-sm font-medium ${
+                  isAtLimit
+                    ? "text-red-500"
+                    : isNearLimit
+                      ? "text-yellow-500"
+                      : "text-black/60"
+                }`}
+              >
+                {quote.length}/{QUOTE_MAX_LENGTH}
+              </div>
+            </div>
+          </div>
 
           <button
             type="submit"
-            disabled={submitting}
-            className="w-full rounded-xl bg-white px-4 py-3 font-semibold text-black"
+            disabled={submitting || !quote.trim()}
+            className="w-full rounded-xl bg-black px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "Submitting..." : "Submit"}
           </button>
 
           {message && (
-            <div className="text-center text-sm text-white/80">{message}</div>
+            <div className="text-center text-sm text-black/80">{message}</div>
           )}
         </div>
       </form>

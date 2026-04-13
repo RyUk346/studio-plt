@@ -40,7 +40,7 @@ export default function QuotesSection({ quotes = [] }) {
 
         <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-center">
           {currentQuote ? (
-            <div className="max-w-4xl">
+            <div className="">
               <div className="text-2xl font-medium leading-relaxed text-white">
                 “{currentQuote.quote}”
               </div>

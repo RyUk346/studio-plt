@@ -8,7 +8,7 @@ export default function ClassCard({ item, now }) {
       ? "bg-white/10 text-white/70"
       : timing.state === "live"
         ? "bg-emerald-500/20 text-emerald-300"
-        : "bg-amber-500/20 text-amber-300";
+        : "";
 
   return (
     <div className="flex h-full w-100 shrink-0 flex-col justify-center rounded-2xl border bg-white/5 border-white/10 px-5 py-2 backdrop-blur-md">
