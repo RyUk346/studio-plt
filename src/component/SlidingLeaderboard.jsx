@@ -33,7 +33,7 @@ export default function SlidingLeaderboard({ leaders }) {
         style={{ transform: `translateY(-${pageIndex * 100}%)` }}
       >
         {pages.map((page, idx) => (
-          <div key={idx} className="h-full space-y-4">
+          <div key={idx} className="h-full space-y-3">
             {page.map((item) => {
               const isFirst = item.rank === 1;
               const isSecond = item.rank === 2;
