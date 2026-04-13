@@ -71,7 +71,7 @@ export default function SlidingLeaderboard({ leaders }) {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex gap-4 justify-center items-center">
                       <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${rankBg}`}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-lg font-semibold ${rankBg}`}
                       >
                         {item.rank === 1
                           ? "🥇"
@@ -87,7 +87,7 @@ export default function SlidingLeaderboard({ leaders }) {
                     </div>
 
                     <div
-                      className={`rounded-full px-3 py-1 text-xs font-lg ${visitBg}`}
+                      className={`rounded-full px-3 py-1 text-lg font-lg ${visitBg}`}
                     >
                       {item.visits} visits
                     </div>

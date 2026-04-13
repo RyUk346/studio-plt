@@ -24,11 +24,11 @@ export default function ClassCard({ item, now }) {
         </div>
       </div>
 
-      <div className="mt-3 text-xl font-semibold leading-tight text-white">
+      <div className="mt-3 text-2xl font-semibold leading-tight text-white">
         {item.title}
       </div>
 
-      <div className="mt-1 text-sm text-white/70">
+      <div className="mt-1 text-lg text-white/70">
         {item.instructor || "Instructor"}
       </div>
     </div>
