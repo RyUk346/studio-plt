@@ -64,7 +64,7 @@ export default function ScheduleBoard() {
       <div className="grid h-full grid-cols-4 gap-4">
         {/* LEFT: LEADERBOARD - FULL HEIGHT */}
         <div className="col-span-1 flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-md">
-          <div className="border-b border-white/10 pb-4">
+          <div className="border-b border-white/50 pb-4">
             <h2 className="text-4xl font-bold tracking-wide">
               {leaderboardHeading || "Leaderboard"}
             </h2>

@@ -11,7 +11,7 @@ export default function ClassCard({ item, now }) {
         : "bg-amber-500/20 text-amber-300";
 
   return (
-    <div className="flex h-full w-100 shrink-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/40 px-5 py-2 backdrop-blur-md">
+    <div className="flex h-full w-100 shrink-0 flex-col justify-center rounded-2xl border bg-white/5 border-white/10 px-5 py-2 backdrop-blur-md">
       <div className="flex items-center justify-between gap-2">
         <div className="text-lg font-bold text-white">
           {formatTime(item.start)}
