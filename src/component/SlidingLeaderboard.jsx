@@ -40,27 +40,27 @@ export default function SlidingLeaderboard({ leaders }) {
               const isThird = item.rank === 3;
 
               const cardBg = isFirst
-                ? "bg-yellow-500/15 border-yellow-400/30 shadow-[0_0_25px_rgba(255,215,0,0.18)]"
+                ? "bg-[#FFB30040] border-[#FFB30030] shadow-[0_0_25px_rgba(255,215,0,0.18)]"
                 : isSecond
-                  ? "bg-slate-300/10 border-slate-300/30 shadow-[0_0_20px_rgba(200,200,200,0.12)]"
+                  ? "bg-[#C0C0C040] border-[#C0C0C030] shadow-[0_0_20px_rgba(200,200,200,0.12)]"
                   : isThird
-                    ? "bg-orange-500/10 border-orange-400/30 shadow-[0_0_20px_rgba(205,127,50,0.16)]"
-                    : "bg-white/10 border-white/10";
+                    ? "bg-[#CD7F3240] border-[#CD7F3230] shadow-[0_0_20px_rgba(205,127,50,0.16)]"
+                    : "bg-white/30 border-white/20";
 
               const rankBg = isFirst
-                ? "bg-yellow-400 text-black"
+                ? "bg-[#FFB300] text-black"
                 : isSecond
-                  ? "bg-slate-300 text-black"
+                  ? "bg-[#C0C0C0] text-black"
                   : isThird
-                    ? "bg-orange-400 text-black"
+                    ? "bg-[#CD7F32] text-black"
                     : "bg-white/10 text-white";
 
               const visitBg = isFirst
-                ? "bg-yellow-400/20 text-yellow-300 border border-yellow-400/30"
+                ? "bg-[#C0C0C010] text-yellow-300 border border-yellow-400/30"
                 : isSecond
-                  ? "bg-slate-300/20 text-slate-200 border border-slate-300/30"
+                  ? "bg-[#C0C0C020] text-slate-200 border border-slate-300/30"
                   : isThird
-                    ? "bg-orange-400/20 text-orange-300 border border-orange-400/30"
+                    ? "bg-[#CD7F3240] text-orange-300 border border-orange-400/30"
                     : "bg-white/10 text-white/70 border border-white/10";
 
               return (
