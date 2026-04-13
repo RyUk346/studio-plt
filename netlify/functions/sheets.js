@@ -6,8 +6,6 @@ export default async (req) => {
     const url = new URL(req.url);
     const type = url.searchParams.get("type");
 
-    console.log("Requested type:", type);
-
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "Missing API key" }), {
         status: 500,
@@ -41,12 +39,12 @@ export default async (req) => {
         });
       }
 
-      const headers = rows[0];
-      const firstNameIndex = headers.indexOf("First name");
-      const lastNameIndex = headers.indexOf("Last name");
-      const visitsIndex = headers.indexOf("Total visits");
+      const headers = rows[0].map((h) => String(h || "").trim());
+      const firstNameIndex = headers.indexOf("First Name");
+      const lastNameIndex = headers.indexOf("Last Name");
+      const visitsIndex = headers.indexOf("Total Visits");
 
-      const leaderboard = rows
+      const sortedRows = rows
         .slice(1)
         .map((row) => ({
           firstName: String(row[firstNameIndex] || "").trim(),
@@ -54,13 +52,23 @@ export default async (req) => {
           visits: Number(row[visitsIndex] || 0),
         }))
         .filter((row) => row.firstName || row.lastName)
-        .sort((a, b) => b.visits - a.visits)
-        .slice(0, 10)
-        .map((row, index) => ({
-          rank: index + 1,
+        .sort((a, b) => b.visits - a.visits);
+
+      let previousVisits = null;
+      let currentDenseRank = 0;
+
+      const rankedRows = sortedRows.map((row) => {
+        if (row.visits !== previousVisits) currentDenseRank += 1;
+        previousVisits = row.visits;
+
+        return {
+          rank: currentDenseRank,
           name: `${row.firstName} ${row.lastName}`.trim(),
           visits: row.visits,
-        }));
+        };
+      });
+
+      const leaderboard = rankedRows.filter((row) => row.rank <= 10);
 
       return new Response(JSON.stringify(leaderboard), {
         headers: { "Content-Type": "application/json" },
@@ -93,7 +101,7 @@ export default async (req) => {
         });
       }
 
-      const headers = rows[0];
+      const headers = rows[0].map((h) => String(h || "").trim());
       const titleIndex = headers.indexOf("Title");
       const instructorIndex = headers.indexOf("Instructor");
       const startIndex = headers.indexOf("Start");
@@ -117,15 +125,131 @@ export default async (req) => {
       });
     }
 
+    // --------------------------------------------------
+    // QUOTES
+    // --------------------------------------------------
+    if (type === "quotes") {
+      const range = encodeURIComponent("Quotes!A:D");
+      const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+
+      if (!res.ok) {
+        return new Response(
+          JSON.stringify({
+            error: data.error?.message || "Google Sheets error",
+          }),
+          {
+            status: res.status,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      const rows = data.values || [];
+      if (rows.length < 2) {
+        return new Response(JSON.stringify([]), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const headers = rows[0].map((h) => String(h || "").trim());
+
+      const timestampIndex = headers.indexOf("Timestamp");
+      const displayNameIndex = headers.indexOf("Display Name");
+      const phoneIndex = headers.indexOf("Phone Number");
+      const quoteIndex = headers.indexOf("Quote");
+
+      if (
+        timestampIndex === -1 ||
+        displayNameIndex === -1 ||
+        phoneIndex === -1 ||
+        quoteIndex === -1
+      ) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Quotes tab must contain headers exactly named "Timestamp", "Display Name", "Phone Number", and "Quote".',
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      const parseSheetTimestamp = (value) => {
+        const str = String(value || "").trim();
+        if (!str) return NaN;
+
+        // First try native parsing
+        const nativeParsed = Date.parse(str);
+        if (!Number.isNaN(nativeParsed)) return nativeParsed;
+
+        // Fallback for format like: 4/13/2026 10:27:51
+        const match = str.match(
+          /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/,
+        );
+
+        if (!match) return NaN;
+
+        const [, month, day, year, hour, minute, second] = match;
+
+        return new Date(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(hour),
+          Number(minute),
+          Number(second),
+        ).getTime();
+      };
+
+      const now = Date.now();
+      const oneHourAgo = now - 60 * 60 * 1000;
+
+      const parsedQuotes = rows
+        .slice(1)
+        .map((row, index) => {
+          const timestamp = String(row[timestampIndex] || "").trim();
+          const timeMs = parseSheetTimestamp(timestamp);
+
+          return {
+            id: index + 1,
+            timestamp,
+            timeMs,
+            displayName: String(row[displayNameIndex] || "").trim(),
+            phoneNumber: String(row[phoneIndex] || "").trim(),
+            quote: String(row[quoteIndex] || "").trim(),
+          };
+        })
+        .filter((item) => item.quote)
+        .filter((item) => !Number.isNaN(item.timeMs))
+        .sort((a, b) => b.timeMs - a.timeMs);
+
+      // const quotes = parsedQuotes.filter(
+      //   (item) => item.timeMs >= oneHourAgo && item.timeMs <= now,
+      // );
+      const quotes = parsedQuotes;
+
+      return new Response(JSON.stringify(quotes), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: "Invalid type" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Sheets function error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: error.message || "Unexpected sheets function error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 };
