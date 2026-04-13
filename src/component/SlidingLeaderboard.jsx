@@ -45,7 +45,7 @@ export default function SlidingLeaderboard({ leaders }) {
                   ? "bg-slate-300/10 border-slate-300/30 shadow-[0_0_20px_rgba(200,200,200,0.12)]"
                   : isThird
                     ? "bg-orange-500/10 border-orange-400/30 shadow-[0_0_20px_rgba(205,127,50,0.16)]"
-                    : "bg-white/5 border-white/10";
+                    : "bg-white/10 border-white/10";
 
               const rankBg = isFirst
                 ? "bg-yellow-400 text-black"
