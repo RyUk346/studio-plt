@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 export default function useLeaderboard() {
   const [leaders, setLeaders] = useState([]);
+  const [heading, setHeading] = useState("");
+  const [subheading, setSubheading] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -18,7 +20,10 @@ export default function useLeaderboard() {
         }
 
         const data = await res.json();
-        setLeaders(data);
+
+        setHeading(data.heading || "");
+        setSubheading(data.subheading || "");
+        setLeaders(Array.isArray(data.leaders) ? data.leaders : []);
         setError("");
       } catch (err) {
         console.error("Leaderboard fetch error:", err);
@@ -34,5 +39,5 @@ export default function useLeaderboard() {
     return () => clearInterval(interval);
   }, []);
 
-  return { leaders, loading, error };
+  return { leaders, heading, subheading, loading, error };
 }

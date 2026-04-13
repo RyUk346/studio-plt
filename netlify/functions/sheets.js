@@ -12,40 +12,62 @@ export default async (req) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    if (type === "leaderboard") {
-      const range = encodeURIComponent("Leaderboard!A:C");
-      const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+    const fetchSheetRange = async (range) => {
+      const encodedRange = encodeURIComponent(range);
+      const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodedRange}?key=${apiKey}`;
 
       const res = await fetch(apiUrl);
       const data = await res.json();
 
       if (!res.ok) {
+        throw new Error(data.error?.message || "Google Sheets error");
+      }
+
+      return data.values || [];
+    };
+    // --------------------------------------------------
+    // LEADERBOARD
+    // --------------------------------------------------
+    if (type === "leaderboard") {
+      const rows = await fetchSheetRange("Leaderboard!A:C");
+
+      if (rows.length < 4) {
         return new Response(
           JSON.stringify({
-            error: data.error?.message || "Google Sheets error",
+            heading: "",
+            subheading: "",
+            leaders: [],
           }),
           {
-            status: res.status,
             headers: { "Content-Type": "application/json" },
           },
         );
       }
 
-      const rows = data.values || [];
-      if (rows.length < 2) {
-        return new Response(JSON.stringify([]), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
+      const heading = String(rows[0]?.[1] || "").trim(); // B1
+      const subheading = String(rows[1]?.[1] || "").trim(); // B2
 
-      const headers = rows[0].map((h) => String(h || "").trim());
+      const headers = (rows[3] || []).map((h) => String(h || "").trim()); // row 4 = A4:C4
+
       const firstNameIndex = headers.indexOf("First Name");
       const lastNameIndex = headers.indexOf("Last Name");
       const visitsIndex = headers.indexOf("Total Visits");
 
+      if (firstNameIndex === -1 || lastNameIndex === -1 || visitsIndex === -1) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Leaderboard tab must have headers on row 4 named exactly "First Name", "Last Name", and "Total Visits".',
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
       const sortedRows = rows
-        .slice(1)
+        .slice(4)
         .map((row) => ({
           firstName: String(row[firstNameIndex] || "").trim(),
           lastName: String(row[lastNameIndex] || "").trim(),
@@ -58,7 +80,10 @@ export default async (req) => {
       let currentDenseRank = 0;
 
       const rankedRows = sortedRows.map((row) => {
-        if (row.visits !== previousVisits) currentDenseRank += 1;
+        if (row.visits !== previousVisits) {
+          currentDenseRank += 1;
+        }
+
         previousVisits = row.visits;
 
         return {
@@ -68,11 +93,18 @@ export default async (req) => {
         };
       });
 
-      const leaderboard = rankedRows.filter((row) => row.rank <= 10);
+      const leaders = rankedRows.filter((row) => row.rank <= 10);
 
-      return new Response(JSON.stringify(leaderboard), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          heading,
+          subheading,
+          leaders,
+        }),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     if (type === "routine") {

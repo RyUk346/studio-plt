@@ -69,16 +69,21 @@ export default function SlidingLeaderboard({ leaders }) {
                   className={`rounded-2xl border px-4 py-4 backdrop-blur-md ${cardBg}`}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${rankBg}`}
-                    >
-                      {item.rank === 1
-                        ? "🥇"
-                        : item.rank === 2
-                          ? "🥈"
-                          : item.rank === 3
-                            ? "🥉"
-                            : item.rank}
+                    <div className="flex gap-4 justify-center items-center">
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${rankBg}`}
+                      >
+                        {item.rank === 1
+                          ? "🥇"
+                          : item.rank === 2
+                            ? "🥈"
+                            : item.rank === 3
+                              ? "🥉"
+                              : item.rank}
+                      </div>
+                      <div className="text-xl font-semibold leading-tight text-white">
+                        {item.name}
+                      </div>
                     </div>
 
                     <div
@@ -86,10 +91,6 @@ export default function SlidingLeaderboard({ leaders }) {
                     >
                       {item.visits} visits
                     </div>
-                  </div>
-
-                  <div className="mt-3 text-xl font-semibold leading-tight text-white">
-                    {item.name}
                   </div>
                 </div>
               );

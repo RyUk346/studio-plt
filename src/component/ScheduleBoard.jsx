@@ -10,6 +10,8 @@ export default function ScheduleBoard() {
   const { classes, loading, error } = useRoutine();
   const {
     leaders,
+    heading: leaderboardHeading,
+    subheading: leaderboardSubheading,
     loading: leaderLoading,
     error: leaderError,
   } = useLeaderboard();
@@ -20,7 +22,7 @@ export default function ScheduleBoard() {
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(new Date());
-    }, 600000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, []);
@@ -63,9 +65,11 @@ export default function ScheduleBoard() {
         {/* LEFT: LEADERBOARD - FULL HEIGHT */}
         <div className="col-span-1 flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-md">
           <div className="border-b border-white/10 pb-4">
-            <h2 className="text-3xl font-bold tracking-wide">Leaderboard</h2>
+            <h2 className="text-3xl font-bold tracking-wide">
+              {leaderboardHeading || "Leaderboard"}
+            </h2>
             <p className="mt-1 text-sm text-white/60">
-              Top members by total visits
+              {leaderboardSubheading || "Top members by total visits"}
             </p>
           </div>
 
@@ -87,7 +91,7 @@ export default function ScheduleBoard() {
         {/* RIGHT: TOP ROUTINE + BOTTOM QUOTES */}
         <div className="col-span-3 flex h-full flex-col ">
           {/* TOP: ROUTINE */}
-          <div className="h-56 rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur-md flex justify-end">
+          <div className="h-40 rounded-3xl border border-white/10 bg-black/25 p-6 backdrop-blur-md flex justify-end">
             <div className="flex h-full items-stretch gap-4">
               {/* Logo + Title */}
               {/* <div className="flex h-full min-w-[220px] flex-col items-start justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4">

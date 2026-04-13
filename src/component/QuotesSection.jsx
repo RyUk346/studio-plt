@@ -59,7 +59,7 @@ export default function QuotesSection({ quotes = [] }) {
 
         <div className="flex h-full min-w-[220px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center">
           <div className="rounded-xl bg-white p-3">
-            <QRCodeComponent value={submitUrl} size={100} />
+            <QRCodeComponent value={submitUrl} size={80} />
           </div>
           <div className="mt-3 text-sm text-white/70">
             Scan to submit your quote
