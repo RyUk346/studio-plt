@@ -22,7 +22,7 @@ export default function ScheduleBoard() {
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(new Date());
-    }, 1000);
+    }, 6000000);
 
     return () => clearInterval(interval);
   }, []);

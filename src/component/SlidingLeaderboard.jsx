@@ -15,16 +15,32 @@ export default function SlidingLeaderboard({ leaders }) {
   }, [leaders]);
 
   const [pageIndex, setPageIndex] = useState(0);
+  const [animateCards, setAnimateCards] = useState(true);
 
   useEffect(() => {
     if (pages.length <= 1) return;
 
     const interval = setInterval(() => {
-      setPageIndex((prev) => (prev + 1) % pages.length);
+      setAnimateCards(false);
+
+      setTimeout(() => {
+        setPageIndex((prev) => (prev + 1) % pages.length);
+        setAnimateCards(true);
+      }, 100);
     }, SLIDE_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [pages.length]);
+
+  useEffect(() => {
+    setAnimateCards(false);
+
+    const timeout = setTimeout(() => {
+      setAnimateCards(true);
+    }, 80);
+
+    return () => clearTimeout(timeout);
+  }, [pageIndex]);
 
   return (
     <div className="relative h-full overflow-hidden">
@@ -34,7 +50,7 @@ export default function SlidingLeaderboard({ leaders }) {
       >
         {pages.map((page, idx) => (
           <div key={idx} className="h-full space-y-3">
-            {page.map((item) => {
+            {page.map((item, itemIndex) => {
               const isFirst = item.rank === 1;
               const isSecond = item.rank === 2;
               const isThird = item.rank === 3;
@@ -63,10 +79,22 @@ export default function SlidingLeaderboard({ leaders }) {
                     ? "bg-[#CD7F3240] text-orange-300 border border-orange-400/30"
                     : "bg-white/10 text-white/70 border border-white/10";
 
+              const isActivePage = idx === pageIndex;
+
               return (
                 <div
                   key={`${item.rank}-${item.name}`}
-                  className={`rounded-2xl border px-4 py-4 backdrop-blur-md ${cardBg}`}
+                  className={`rounded-2xl border px-4 py-4 backdrop-blur-md transition-all duration-700 ease-out ${cardBg} ${
+                    isActivePage && animateCards
+                      ? "translate-x-0 opacity-100"
+                      : "-translate-x-16 opacity-0"
+                  }`}
+                  style={{
+                    transitionDelay:
+                      isActivePage && animateCards
+                        ? `${itemIndex * 120}ms`
+                        : "0ms",
+                  }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex gap-4 justify-center items-center">
@@ -81,6 +109,7 @@ export default function SlidingLeaderboard({ leaders }) {
                               ? "🥉"
                               : item.rank}
                       </div>
+
                       <div className="text-2xl font-semibold leading-tight text-white">
                         {item.name}
                       </div>

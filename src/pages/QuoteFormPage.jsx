@@ -55,18 +55,12 @@ export default function QuoteFormPage() {
     <div className="flex flex-col min-h-screen items-center justify-center bg-gray-200 px-4 text-black">
       <div className="flex justify-between items-center gap-4 mb-4">
         <img src={studioPlt} alt="" className="w-15 " />
-        <div className="flex gap-2 justify-center items-center mt-4">
-          <h2>Powered By,</h2>
-          <a href="https://hyperglow.co.uk/">
-            <img src={HGlogo} alt="" className="w-40" />
-          </a>
-        </div>
       </div>
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-xl rounded-3xl border border-black/10 bg-gray-300 p-4"
       >
-        <h1 className="text-2xl font-bold text-center">Submit Your Quote</h1>
+        <h1 className="text-2xl font-bold text-center">Submit Your Comment</h1>
 
         <div className="mt-6 space-y-4">
           <input
@@ -129,6 +123,12 @@ export default function QuoteFormPage() {
           )}
         </div>
       </form>
+      <div className="flex gap-2 justify-center items-center mt-4">
+        <h2>Powered By,</h2>
+        <a href="https://hyperglow.co.uk/">
+          <img src={HGlogo} alt="" className="w-40" />
+        </a>
+      </div>
     </div>
   );
 }
