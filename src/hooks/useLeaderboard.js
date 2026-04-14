@@ -10,8 +10,7 @@ export default function useLeaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch("/.netlify/functions/sheets?type=leaderboard");
-
+        const res = await fetch("/api/sheets?type=leaderboard");
         if (!res.ok) {
           const errorData = await res.json().catch(() => null);
           throw new Error(

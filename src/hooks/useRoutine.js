@@ -9,8 +9,7 @@ export default function useRoutine() {
   useEffect(() => {
     const fetchRoutine = async () => {
       try {
-        const res = await fetch("/.netlify/functions/sheets?type=routine");
-
+        const res = await fetch("/api/sheets?type=routine");
         if (!res.ok) {
           const errorData = await res.json().catch(() => null);
           throw new Error(

@@ -8,8 +8,7 @@ export default function useQuotes() {
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
-        const res = await fetch("/.netlify/functions/sheets?type=quotes");
-
+        const res = await fetch("/api/sheets?type=quotes");
         if (!res.ok) {
           const errorData = await res.json().catch(() => null);
           throw new Error(

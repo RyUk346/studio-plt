@@ -22,7 +22,7 @@ export default function QuoteFormPage() {
     setMessage("");
 
     try {
-      const res = await fetch("/.netlify/functions/submit-quote", {
+      const res = await fetch("/api/submit-quote", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
