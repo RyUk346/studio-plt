@@ -24,7 +24,7 @@ export default function QuotesSection({ quotes = [] }) {
 
   const submitUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/quote`
+      ? `${window.location.origin}/Message`
       : "/quote";
 
   return (
