@@ -37,10 +37,10 @@ export default function QuoteFormPage() {
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.success) {
-        throw new Error(data?.error || "Failed to submit quote");
+        throw new Error(data?.error || "Failed to submit comment");
       }
 
-      setMessage("Thank you! Your quote has been submitted.");
+      setMessage("Thank you! Your comment has been submitted.");
       setDisplayName("");
       setPhoneNumber("");
       setQuote("");

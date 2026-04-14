@@ -24,8 +24,8 @@ export default function QuotesSection({ quotes = [] }) {
 
   const submitUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/Message`
-      : "/quote";
+      ? `${window.location.origin}/StudioPLT/PLT-OP-LP/Message`
+      : "/StudioPLT/PLT-OP-LP/Message";
 
   return (
     <div className="h-full w-full rounded-3xl border border-white/10 bg-black/25 p-2 backdrop-blur-md">
