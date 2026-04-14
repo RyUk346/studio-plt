@@ -7,8 +7,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ScheduleBoard />} />
-        <Route path="/quote" element={<QuoteFormPage />} />
+        <Route path="/StudioPLT/PLT-OP-LP/Layer1" element={<ScheduleBoard />} />
+        <Route
+          path="/StudioPLT/PLT-OP-LP/Message"
+          element={<QuoteFormPage />}
+        />
       </Routes>
     </BrowserRouter>
   );

@@ -50,7 +50,7 @@ export default function QuotesSection({ quotes = [] }) {
             </div>
           ) : (
             <div className="text-2xl font-medium text-white/70">
-              Scan QR code to show quote
+              Scan QR code to share a message
             </div>
           )}
         </div>
