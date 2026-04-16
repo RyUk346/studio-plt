@@ -16,6 +16,24 @@ export default function QuotesSection({ quotes = [] }) {
 
     return () => clearInterval(interval);
   }, [quotes]);
+  const [qrSize, setQrSize] = useState(100);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // If screen is smaller than 1750px (matching your layout), make QR smaller
+      if (window.innerWidth < 1750) {
+        setQrSize(60);
+      } else {
+        setQrSize(100);
+      }
+    };
+
+    // Set initial size
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const currentQuote =
     Array.isArray(quotes) && quotes.length > 0
@@ -41,23 +59,23 @@ export default function QuotesSection({ quotes = [] }) {
         <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-center">
           {currentQuote ? (
             <div className="">
-              <div className="text-2xl font-medium leading-relaxed text-white">
+              <div className="max-[1750px]:text-lg text-2xl font-medium leading-relaxed text-white">
                 “{currentQuote.quote}”
               </div>
-              <div className="mt-3 text-md text-white/60">
+              <div className="mt-3 max-[1750px]:text-sm text-md text-white/60">
                 — {currentQuote.displayName || "Anonymous"}
               </div>
             </div>
           ) : (
-            <div className="text-2xl font-medium text-white/70">
+            <div className="max-[1750px]:text-lg text-2xl font-medium text-white/70">
               Scan QR code to share a message
             </div>
           )}
         </div>
 
         <div className="flex h-full flex-col items-center justify-center rounded-2xl  px-2 text-center">
-          <div className="rounded-xl bg-white p-2">
-            <QRCodeComponent value={submitUrl} size={100} />
+          <div className="flex items-center justify-center p-2 bg-white rounded-xl">
+            <QRCodeComponent value={submitUrl} size={qrSize} />
           </div>
         </div>
       </div>

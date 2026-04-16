@@ -1,7 +1,7 @@
 import { useState } from "react";
-import studioPlt from "../../public/Studio-PLT-Logo-grey.svg";
-import HGlogo from "../../public/hyperglow-logo.png.webp";
-
+import studioPlt from "../assets/Studio-PLT-Logo-grey.svg";
+import HGlogo from "../assets/hyperglow-logo.png.webp";
+import { API_BASE } from "../utils/api";
 const QUOTE_MAX_LENGTH = 200;
 const WARNING_THRESHOLD = 25;
 
@@ -22,11 +22,9 @@ export default function QuoteFormPage() {
     setMessage("");
 
     try {
-      const res = await fetch("/api/submit-quote", {
+      const res = await fetch(`${API_BASE}/api/submit-quote`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           displayName,
           phoneNumber,
@@ -83,7 +81,7 @@ export default function QuoteFormPage() {
 
           <div>
             <textarea
-              placeholder="Write your quote"
+              placeholder="Write your message"
               value={quote}
               onChange={(e) => setQuote(e.target.value)}
               maxLength={QUOTE_MAX_LENGTH}

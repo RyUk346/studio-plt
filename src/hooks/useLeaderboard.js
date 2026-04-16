@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "../utils/api";
 
 export default function useLeaderboard() {
   const [leaders, setLeaders] = useState([]);
@@ -10,7 +11,7 @@ export default function useLeaderboard() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch("/api/sheets?type=leaderboard");
+        const res = await fetch(`${API_BASE}/api/sheets?type=leaderboard`);
         if (!res.ok) {
           const errorData = await res.json().catch(() => null);
           throw new Error(
@@ -20,10 +21,9 @@ export default function useLeaderboard() {
 
         const data = await res.json();
 
+        setLeaders(data.leaders || []);
         setHeading(data.heading || "");
         setSubheading(data.subheading || "");
-        setLeaders(Array.isArray(data.leaders) ? data.leaders : []);
-        setError("");
       } catch (err) {
         console.error("Leaderboard fetch error:", err);
         setError(err.message || "Failed to load leaderboard");

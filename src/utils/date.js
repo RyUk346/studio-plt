@@ -1,20 +1,6 @@
-export const isToday = (dateString) => {
-  const now = new Date();
-  const target = new Date(dateString);
-
-  return (
-    target.getFullYear() === now.getFullYear() &&
-    target.getMonth() === now.getMonth() &&
-    target.getDate() === now.getDate()
-  );
-};
-
-export const isClassFinished = (endString, now = new Date()) => {
-  return new Date(endString) <= now;
-};
-
 export const formatTime = (dateString) => {
   const date = new Date(dateString);
+
   return date.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -26,7 +12,11 @@ export const formatDuration = (ms) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  // const seconds = totalSeconds % 60;
+  const seconds = totalSeconds % 60;
+
+  if (minutes === 0 && seconds < 60) {
+    return "<1m"; // Show <1m if the time is less than 1 minute
+  }
 
   if (hours > 0) {
     return `${hours}h ${minutes}m `;
@@ -46,7 +36,7 @@ export const getClassTimingState = (
   if (now < start) {
     return {
       state: "scheduled",
-      // label: `Starts in ${formatDuration(start - now)}`,
+      label: `Starts in ${formatDuration(start - now)}`,
     };
   }
 

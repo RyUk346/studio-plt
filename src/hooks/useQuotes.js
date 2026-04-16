@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "../utils/api";
 
 export default function useQuotes() {
   const [quotes, setQuotes] = useState([]);
@@ -8,7 +9,7 @@ export default function useQuotes() {
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
-        const res = await fetch("/api/sheets?type=quotes");
+        const res = await fetch(`${API_BASE}/api/sheets?type=leaderboard`);
         if (!res.ok) {
           const errorData = await res.json().catch(() => null);
           throw new Error(

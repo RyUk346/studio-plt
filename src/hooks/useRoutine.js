@@ -1,5 +1,23 @@
 import { useEffect, useState } from "react";
-import { isToday, isClassFinished } from "../utils/date";
+import { API_BASE } from "../utils/api";
+
+function getTodayWeekday() {
+  return new Date()
+    .toLocaleDateString("en-US", { weekday: "long" })
+    .toLowerCase();
+}
+
+function buildDateTimeForToday(startTime) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return new Date(`${year}-${month}-${day} ${startTime}`);
+}
+
+function buildEndTime(startDate, durationMinutes) {
+  return new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+}
 
 export default function useRoutine() {
   const [classes, setClasses] = useState([]);
@@ -9,38 +27,42 @@ export default function useRoutine() {
   useEffect(() => {
     const fetchRoutine = async () => {
       try {
-        const res = await fetch("/api/sheets?type=routine");
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => null);
-          throw new Error(
-            errorData?.error || `HTTP ${res.status} ${res.statusText}`,
-          );
-        }
+        const res = await fetch(`${API_BASE}/api/sheets?type=routine`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
+        const rawClasses = Array.isArray(data) ? data : data?.classes || [];
+
+        const today = getTodayWeekday();
         const now = new Date();
 
-        const filtered = data
-          .filter((item) => item.start && item.end)
-          .filter((item) => isToday(item.start))
-          .filter((item) => !isClassFinished(item.end, now))
-          .sort((a, b) => new Date(a.start) - new Date(b.start));
+        const todayClasses = rawClasses
+          .filter(
+            (item) => String(item.dayOfWeek || "").toLowerCase() === today,
+          )
+          .map((item) => {
+            const start = buildDateTimeForToday(item.startTime);
+            const end = buildEndTime(start, item.duration);
+            return {
+              ...item,
+              start: start.toISOString(),
+              end: end.toISOString(),
+            };
+          })
+          .filter((item) => new Date(item.end) > now) // Only current or upcoming
+          .sort((a, b) => new Date(a.start) - new Date(b.start)); // Earliest first
 
-        setClasses(filtered);
+        setClasses(todayClasses);
         setError("");
       } catch (err) {
-        console.error("Routine fetch error:", err);
-        setError(err.message || "Failed to load routine");
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchRoutine();
-
-    // refresh often so finished classes disappear quickly
-    const interval = setInterval(fetchRoutine, 5000);
-
+    const interval = setInterval(fetchRoutine, 10000);
     return () => clearInterval(interval);
   }, []);
 

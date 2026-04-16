@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = window.innerWidth <= 1750 ? 8 : 10;
 const SLIDE_INTERVAL_MS = 10000;
 
 export default function SlidingLeaderboard({ leaders }) {
@@ -49,7 +49,7 @@ export default function SlidingLeaderboard({ leaders }) {
         style={{ transform: `translateY(-${pageIndex * 100}%)` }}
       >
         {pages.map((page, idx) => (
-          <div key={idx} className="h-full space-y-3">
+          <div key={idx} className="h-full max-[1750px]:space-y-1 space-y-3">
             {page.map((item, itemIndex) => {
               const isFirst = item.rank === 1;
               const isSecond = item.rank === 2;
@@ -84,7 +84,7 @@ export default function SlidingLeaderboard({ leaders }) {
               return (
                 <div
                   key={`${item.rank}-${item.name}`}
-                  className={`rounded-2xl border px-4 py-4 backdrop-blur-md transition-all duration-700 ease-out ${cardBg} ${
+                  className={`rounded-2xl border px-4 max-[1750px]:py-2 py-4 backdrop-blur-md transition-all duration-700 ease-out ${cardBg} ${
                     isActivePage && animateCards
                       ? "translate-x-0 opacity-100"
                       : "-translate-x-16 opacity-0"
@@ -92,14 +92,14 @@ export default function SlidingLeaderboard({ leaders }) {
                   style={{
                     transitionDelay:
                       isActivePage && animateCards
-                        ? `${itemIndex * 120}ms`
+                        ? `${itemIndex * 180}ms`
                         : "0ms",
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex gap-4 justify-center items-center">
                       <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-full text-lg font-semibold ${rankBg}`}
+                        className={`flex max-[1750px]:h-5 max-[1750px]:w-5 h-9 w-9 items-center justify-center rounded-full max-[1750px]:text-xs text-lg font-semibold ${rankBg}`}
                       >
                         {item.rank === 1
                           ? "🥇"
@@ -110,13 +110,13 @@ export default function SlidingLeaderboard({ leaders }) {
                               : item.rank}
                       </div>
 
-                      <div className="text-2xl font-semibold leading-tight text-white">
+                      <div className="max-[1750px]:text-lg max-[1750px]:font-medium text-2xl font-semibold leading-tight text-white">
                         {item.name}
                       </div>
                     </div>
 
                     <div
-                      className={`rounded-full px-3 py-1 text-lg font-lg ${visitBg}`}
+                      className={`rounded-full px-3 py-1 text-lg max-[1750px]:text-xs ${visitBg}`}
                     >
                       {item.visits} visits
                     </div>
