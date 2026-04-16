@@ -14,7 +14,7 @@ export default function ClassCard({ item, forceShowBadge = false }) {
 
   return (
     <div className="flex h-full w-[280px] flex-shrink-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-0">
         <div className="max-[1750px]:text-sm text-lg font-bold text-white">
           {formatTime(item.start)}
         </div>

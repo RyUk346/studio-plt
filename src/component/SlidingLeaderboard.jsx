@@ -56,12 +56,12 @@ export default function SlidingLeaderboard({ leaders }) {
               const isThird = item.rank === 3;
 
               const cardBg = isFirst
-                ? "bg-[#FFB30040] border-[#FFB30030] shadow-[0_0_25px_rgba(255,215,0,0.18)]"
+                ? "bg-white/30 border-white/20"
                 : isSecond
-                  ? "bg-[#C0C0C040] border-[#C0C0C030] shadow-[0_0_20px_rgba(200,200,200,0.12)]"
+                  ? "bg-white/30 border-white/20"
                   : isThird
-                    ? "bg-[#CD7F3240] border-[#CD7F3230] shadow-[0_0_20px_rgba(205,127,50,0.16)]"
-                    : "bg-white/30 border-white/20";
+                    ? "bg-white/30 border-white/20"
+                    : "bg-white/50 border-white/20";
 
               const rankBg = isFirst
                 ? "bg-[#FFB300] text-black"
