@@ -13,7 +13,7 @@ export default function ClassCard({ item, forceShowBadge = false }) {
     : "bg-amber-500/20 text-amber-300";
 
   return (
-    <div className="flex h-full w-[280px] flex-shrink-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
+    <div className="flex h-full w-[222px] flex-shrink-0 flex-col justify-center rounded-2xl border border-white/10 bg-black/30 px-4 py-4 backdrop-blur-md">
       <div className="flex items-center justify-between gap-0">
         <div className="max-[1750px]:text-sm text-lg font-bold text-white">
           {formatTime(item.start)}
@@ -29,11 +29,11 @@ export default function ClassCard({ item, forceShowBadge = false }) {
         )}
       </div>
 
-      <div className="max-[1750px]:mt-0.5 mt-3 max-[1750px]:text-lg text-xl font-semibold leading-tight text-white">
+      <div className="max-[1750px]:mt-0 mt-3 max-[1750px]:text-lg text-xl font-semibold leading-tight text-white">
         {item.title}
       </div>
 
-      <div className="max-[1750px]:mt-0.5 mt-1 text-sm text-white/70">
+      <div className="max-[1750px]:mt-0 mt-1 text-lg text-white/70">
         {item.instructor || "Instructor"}
       </div>
     </div>
