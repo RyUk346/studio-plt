@@ -58,7 +58,7 @@ export default function SlidingLeaderboard({ leaders }) {
               const cardBg = isFirst
                 ? "bg-white/30 border-white/20"
                 : isSecond
-                  ? "bg-white/30 border-white/20"
+                  ? "bg-white/50 border-white/20"
                   : isThird
                     ? "bg-white/30 border-white/20"
                     : "bg-white/50 border-white/20";
