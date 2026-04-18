@@ -37,6 +37,7 @@ const fetchSheetRange = async (range) => {
 // API ROUTES
 // ------------------------------------
 app.get("/api/sheets", async (req, res) => {
+  res.set("Cache-Control", "no-store"); // Force VPS to always get fresh data
   try {
     const type = req.query.type;
 
