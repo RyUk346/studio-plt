@@ -16,11 +16,11 @@ export default function QuotesSection({ quotes = [] }) {
 
     return () => clearInterval(interval);
   }, [quotes]);
+
   const [qrSize, setQrSize] = useState(100);
 
   useEffect(() => {
     const handleResize = () => {
-      // If screen is smaller than 1750px (matching your layout), make QR smaller
       if (window.innerWidth < 1750) {
         setQrSize(60);
       } else {
@@ -28,7 +28,6 @@ export default function QuotesSection({ quotes = [] }) {
       }
     };
 
-    // Set initial size
     handleResize();
 
     window.addEventListener("resize", handleResize);
@@ -47,22 +46,14 @@ export default function QuotesSection({ quotes = [] }) {
 
   return (
     <div className="h-full w-full rounded-3xl border border-white/10 bg-black/25 p-2 backdrop-blur-md">
-      {" "}
       <div className="flex h-full items-stretch gap-4">
-        {/* <div className="flex h-full min-w-[220px] flex-col items-start justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-6 py-4">
-          <div className="text-sm uppercase tracking-[0.2em] text-white/50">
-            Studio PLT
-          </div>
-          <div className="mt-2 text-xl font-bold leading-tight">Comments</div>
-        </div> */}
-
         <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-center">
           {currentQuote ? (
-            <div className="">
-              <div className="max-[1750px]:text-lg text-2xl font-medium leading-relaxed text-white">
+            <div>
+              <div className="max-[1750px]:text-xl text-2xl font-medium leading-relaxed text-white">
                 “{currentQuote.quote}”
               </div>
-              <div className="mt-3 max-[1750px]:text-sm text-md text-white/60">
+              <div className="max-[1750px]:mt-0 mt-3 max-[1750px]:text-sm text-md text-white/60">
                 — {currentQuote.displayName || "Anonymous"}
               </div>
             </div>
@@ -74,7 +65,7 @@ export default function QuotesSection({ quotes = [] }) {
         </div>
 
         <div className="flex h-full flex-col items-center justify-center rounded-2xl text-center">
-          <div className="flex items-center justify-center bg-white rounded-xl">
+          <div className="flex items-center justify-center rounded-xl bg-white">
             <QRCodeComponent value={submitUrl} size={qrSize} />
           </div>
         </div>

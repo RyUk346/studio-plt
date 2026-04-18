@@ -2,6 +2,7 @@ import { useState } from "react";
 import studioPlt from "../assets/Studio-PLT-Logo-grey.svg";
 import HGlogo from "../assets/hyperglow-logo.png.webp";
 import { API_BASE } from "../utils/api";
+
 const QUOTE_MAX_LENGTH = 200;
 const WARNING_THRESHOLD = 25;
 
@@ -52,7 +53,7 @@ export default function QuoteFormPage() {
   return (
     <div className="flex flex-col min-h-screen items-center justify-center bg-gray-200 px-4 text-black">
       <div className="flex justify-between items-center gap-4 mb-4">
-        <img src={studioPlt} alt="" className="w-15 " />
+        <img src={studioPlt} alt="Studio PLT" className="w-15" />
       </div>
       <form
         onSubmit={handleSubmit}
@@ -93,7 +94,6 @@ export default function QuoteFormPage() {
               <div className="text-xs text-black/50">
                 Maximum {QUOTE_MAX_LENGTH} characters
               </div>
-
               <div
                 className={`text-sm font-medium ${
                   isAtLimit
@@ -124,7 +124,7 @@ export default function QuoteFormPage() {
       <div className="flex gap-2 justify-center items-center mt-4">
         <h2>Powered By,</h2>
         <a href="https://hyperglow.co.uk/">
-          <img src={HGlogo} alt="" className="w-40" />
+          <img src={HGlogo} alt="Hyperglow" className="w-40" />
         </a>
       </div>
     </div>

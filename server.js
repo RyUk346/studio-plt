@@ -139,21 +139,41 @@ app.get("/api/sheets", async (req, res) => {
     if (type === "quotes") {
       const rows = await fetchSheetRange("Quotes!A:D");
 
+      if (rows.length < 2) {
+        return res.json([]); // ✅ Fixed: Use res.json instead of new Response
+      }
+
+      const headers = rows[0].map((h) => String(h || "").trim());
+      const timestampIndex = headers.indexOf("Timestamp");
+      const displayNameIndex = headers.indexOf("Display Name");
+      const quoteIndex = headers.indexOf("Quote");
+
       const now = Date.now();
-      const oneHourAgo = now - 3600000;
+      const oneHourAgo = now - 60 * 60 * 1000;
 
       const quotes = rows
         .slice(1)
-        .map((r, i) => ({
-          id: i + 1,
-          time: Date.parse(r[0]),
-          displayName: r[1],
-          quote: r[3],
-        }))
-        .filter((q) => q.quote && q.time >= oneHourAgo)
-        .sort((a, b) => b.time - a.time);
+        .map((row, index) => {
+          const rawTime = String(row[timestampIndex] || "").trim();
 
-      return res.json(quotes);
+          // We try to parse the time.
+          // If it's UTC from Apps Script, Date.parse handles it.
+          let timeMs = Date.parse(rawTime);
+
+          return {
+            id: index + 1,
+            timeMs,
+            displayName: String(row[displayNameIndex] || "").trim(),
+            quote: String(row[quoteIndex] || "").trim(),
+          };
+        })
+        .filter((q) => q.quote)
+        .filter((q) => !Number.isNaN(q.timeMs))
+        // Filter for last 1 hour, allowing 5 mins future buffer for clock sync
+        .filter((q) => q.timeMs >= oneHourAgo && q.timeMs <= now + 300000)
+        .sort((a, b) => b.timeMs - a.timeMs);
+
+      return res.json(quotes); // ✅ Fixed: Use res.json
     }
 
     return res.status(400).json({ error: "Invalid type" });
@@ -165,20 +185,61 @@ app.get("/api/sheets", async (req, res) => {
 // ---------------- SUBMIT QUOTE ----------------
 app.post("/api/submit-quote", async (req, res) => {
   try {
-    if (!QUOTE_SCRIPT_URL) {
+    const body = req.body || null;
+
+    if (!body) {
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+
+    const displayName = String(body.displayName || "").trim();
+    const phoneNumber = String(body.phoneNumber || "").trim();
+    const quote = String(body.quote || "").trim();
+
+    if (!displayName || !phoneNumber || !quote) {
+      return res.status(400).json({
+        error: "Display name, phone number, and quote are required.",
+      });
+    }
+
+    const scriptUrl = process.env.QUOTE_SCRIPT_URL;
+
+    if (!scriptUrl) {
       return res.status(500).json({ error: "Missing QUOTE_SCRIPT_URL" });
     }
 
-    const r = await fetch(QUOTE_SCRIPT_URL, {
+    const upstreamRes = await fetch(scriptUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        displayName,
+        phoneNumber,
+        quote,
+      }),
     });
 
-    const text = await r.text();
-    return res.send(text);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+    const text = await upstreamRes.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { success: upstreamRes.ok, raw: text };
+    }
+
+    if (!upstreamRes.ok || data.success === false) {
+      return res.status(500).json({
+        error: data.error || "Failed to submit quote to Apps Script",
+        details: data,
+      });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({
+      error: error.message || "Unexpected submit-quote error",
+    });
   }
 });
 

@@ -4,35 +4,28 @@ import { API_BASE } from "../utils/api";
 export default function useQuotes() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchQuotes = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/sheets?type=leaderboard`);
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => null);
-          throw new Error(
-            errorData?.error || `HTTP ${res.status} ${res.statusText}`,
-          );
-        }
-
+        // Fetch from your VPS/Netlify endpoint
+        const res = await fetch(`${API_BASE}/api/sheets?type=quotes`);
         const data = await res.json();
-        setQuotes(data);
-        setError("");
+
+        if (Array.isArray(data)) {
+          setQuotes(data); // The API already filtered for the last 1 hour
+        }
       } catch (err) {
-        console.error("Quotes fetch error:", err);
-        setError(err.message || "Failed to load quotes");
+        console.error("Error fetching quotes:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchQuotes();
-    const interval = setInterval(fetchQuotes, 15000);
-
+    const interval = setInterval(fetchQuotes, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  return { quotes, loading, error };
+  return { quotes, loading };
 }
