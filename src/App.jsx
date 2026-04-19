@@ -16,14 +16,14 @@ export default function App() {
         <Route
           path={MAIN_PATH}
           element={
-            <ProtectedRoute>
-              <ScheduleBoard />
-            </ProtectedRoute>
+            // <ProtectedRoute>
+            <ScheduleBoard />
+            /* </ProtectedRoute> */
           }
         />
 
         <Route path={MESSAGE_PATH} element={<QuoteFormPage />} />
-        <Route path={LOGIN_PATH} element={<LoginPage />} />
+        {/* <Route path={LOGIN_PATH} element={<LoginPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
