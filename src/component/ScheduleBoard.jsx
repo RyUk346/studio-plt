@@ -76,7 +76,7 @@ export default function ScheduleBoard() {
     <div className="h-screen w-screen overflow-hidden p-2 text-white">
       <div className="grid h-full grid-cols-9 gap-2">
         {/* LEFT: LEADERBOARD */}
-        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-3xl bg-black/30  max-[1750px]:p-4 p-6 backdrop-blur-md">
+        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-lg bg-black/30  max-[1750px]:p-4 p-6 backdrop-blur-md">
           <div className="border-b border-white/50 max-[1750px]:pb-2 pb-4">
             <h2 className="max-[1750px]:text-2xl text-4xl font-bold tracking-wide">
               {leaderboardHeading || "Leaderboard"}
@@ -90,7 +90,7 @@ export default function ScheduleBoard() {
             {leaderLoading ? (
               <div className="text-white/70">Loading leaderboard...</div>
             ) : leaderError ? (
-              <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-4 text-red-300">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-4 text-red-300">
                 {leaderError}
               </div>
             ) : leaders.length === 0 ? (
@@ -104,11 +104,11 @@ export default function ScheduleBoard() {
         {/* RIGHT: TOP ROUTINE + BOTTOM QUOTES */}
         <div className="max-[1750px]:col-span-7 col-span-4 flex h-full flex-col">
           {/* TOP: ROUTINE */}
-          <div className="max-[1750px]:h-22 h-35 rounded-3xl  backdrop-blur-md flex justify-end">
+          <div className="max-[1750px]:h-22 h-35 rounded-lg  backdrop-blur-md flex justify-end">
             <div className="flex h-full items-stretch gap-2 w-full">
               <div className="h-full flex-1 overflow-hidden">
                 {classes.length === 0 ? (
-                  <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-white/70"></div>
+                  <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-lg border border-white/10 bg-white/5 px-6 py-4 text-center text-white/70"></div>
                 ) : (
                   <div className="hide-scrollbar h-full overflow-x-auto overflow-y-hidden grid-cols-5">
                     <div className="grid-cols-5 flex h-full flex-row-reverse items-center gap-2 px-2">
@@ -126,7 +126,7 @@ export default function ScheduleBoard() {
               </div>
 
               {/* Time + Date Section */}
-              <div className="flex h-full min-w-[100px] flex-col items-end justify-center overflow-hidden rounded-2xl border border-white/10 bg-black/10 max-[1750px]:px-4 px-6 py-4 text-right">
+              <div className="flex h-full min-w-[100px] flex-col items-end justify-center overflow-hidden rounded-lg border border-white/10 bg-black/10 max-[1750px]:px-4 px-6 py-4 text-right">
                 <div className="text-sm text-white/60">{currentDate}</div>
                 <div className="mt-2 max-[1750px]:text-xl text-3xl font-bold tabular-nums text-white">
                   {currentTime}
