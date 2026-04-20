@@ -69,15 +69,15 @@ export default function SlidingLeaderboard({ leaders }) {
                   ? "bg-[#C0C0C0] text-black"
                   : isThird
                     ? "bg-[#CD7F32] text-black"
-                    : " text-gray-600";
+                    : " text-[#C0C0C0]";
 
               const visitBg = isFirst
                 ? "bg-[#FFD70040] text-yellow-300 border border-yellow-400/30"
                 : isSecond
-                  ? "bg-[#C0C0C040] text-slate-300 border border-slate-300/30"
+                  ? "bg-[#C0C0C040] text-slate-50 border border-slate-300/30"
                   : isThird
                     ? "bg-[#CD7F3240] text-orange-300 border border-orange-400/30"
-                    : " text-gray-600 border border-white/10";
+                    : " text-[#C0C0C0] border border-white/10";
 
               const textColor = isFirst
                 ? "text-[#FFD700]"

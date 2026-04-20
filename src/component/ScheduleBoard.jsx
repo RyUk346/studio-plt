@@ -73,7 +73,7 @@ export default function ScheduleBoard() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden p-2 bg-gray-800 text-white">
+    <div className="h-screen w-screen overflow-hidden p-2 text-white">
       <div className="grid h-full grid-cols-9 gap-2">
         {/* LEFT: LEADERBOARD */}
         <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-lg bg-black/30  max-[1750px]:p-4 p-6 backdrop-blur-md">
