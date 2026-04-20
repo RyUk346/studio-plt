@@ -45,12 +45,12 @@ export default function QuotesSection({ quotes = [] }) {
       : "/StudioPLT/PLT-OP-LP/Message";
 
   return (
-    <div className="h-full w-full rounded-3xl border border-white/10 bg-black/25 p-2 backdrop-blur-md">
-      <div className="flex h-full items-stretch gap-4">
-        <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-center">
+    <div className="h-full w-full rounded-3xl py-2 ">
+      <div className="flex h-full items-stretch gap-2">
+        <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-2xl border backdrop-blur-md px-8 py-4 text-center">
           {currentQuote ? (
             <div>
-              <div className="max-[1750px]:text-xl text-2xl font-medium leading-relaxed text-white">
+              <div className="text-2xl font-medium leading-relaxed text-white">
                 “{currentQuote.quote}”
               </div>
               <div className="max-[1750px]:mt-0 mt-3 max-[1750px]:text-sm text-md text-white/60">
@@ -65,7 +65,7 @@ export default function QuotesSection({ quotes = [] }) {
         </div>
 
         <div className="flex h-full flex-col items-center justify-center rounded-2xl text-center">
-          <div className="flex items-center justify-center rounded-xl bg-white">
+          <div className="flex items-center justify-center rounded-xl">
             <QRCodeComponent value={submitUrl} size={qrSize} />
           </div>
         </div>

@@ -56,12 +56,12 @@ export default function SlidingLeaderboard({ leaders }) {
               const isThird = item.rank === 3;
 
               const cardBg = isFirst
-                ? "bg-white/30 border-white/20"
+                ? "border-white/20"
                 : isSecond
-                  ? "bg-white/50 border-white/20"
+                  ? "border-white/20"
                   : isThird
-                    ? "bg-white/30 border-white/20"
-                    : "bg-white/50 border-white/20";
+                    ? "border-white/20"
+                    : "border-white/20";
 
               const rankBg = isFirst
                 ? "bg-[#FFB300] text-black"
@@ -69,16 +69,23 @@ export default function SlidingLeaderboard({ leaders }) {
                   ? "bg-[#C0C0C0] text-black"
                   : isThird
                     ? "bg-[#CD7F32] text-black"
-                    : "bg-white/10 text-white";
+                    : " text-white";
 
               const visitBg = isFirst
-                ? "bg-[#C0C0C010] text-yellow-300 border border-yellow-400/30"
+                ? "bg-[#FFD70040] text-yellow-300 border border-yellow-400/30"
                 : isSecond
-                  ? "bg-[#C0C0C020] text-slate-200 border border-slate-300/30"
+                  ? "bg-[#C0C0C040] text-slate-300 border border-slate-300/30"
                   : isThird
                     ? "bg-[#CD7F3240] text-orange-300 border border-orange-400/30"
-                    : "bg-white/10 text-white/70 border border-white/10";
+                    : " text-white/70 border border-white/10";
 
+              const textColor = isFirst
+                ? "text-[#FFD700]"
+                : isSecond
+                  ? "text-slate-300"
+                  : isThird
+                    ? "text-[#CD7F32]"
+                    : "text-white";
               const isActivePage = idx === pageIndex;
 
               return (
@@ -110,7 +117,9 @@ export default function SlidingLeaderboard({ leaders }) {
                               : item.rank}
                       </div>
 
-                      <div className="max-[1750px]:text-lg max-[1750px]:font-medium text-2xl font-semibold leading-tight text-white">
+                      <div
+                        className={`max-[1750px]:text-lg max-[1750px]:font-medium text-2xl font-semibold leading-tight ${textColor}`}
+                      >
                         {item.name}
                       </div>
                     </div>

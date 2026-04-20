@@ -3,10 +3,13 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import crypto from "crypto";
+import cookieParser from "cookie-parser";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +17,39 @@ const __dirname = path.dirname(__filename);
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const QUOTE_SCRIPT_URL = process.env.QUOTE_SCRIPT_URL;
 const SHEET_ID = "1j_ya2A8-hyTsR53BZh-pj9jp1163t6tGA2fBjDXmCaM";
+
+const SCREEN_LOGIN_TOKEN = process.env.SCREEN_LOGIN_TOKEN;
+const AUTH_COOKIE_SECRET = process.env.AUTH_COOKIE_SECRET;
+const AUTH_COOKIE_NAME = "hg_screen_auth";
+
+const MAIN_PATH = "/StudioPLT/PLT-OP-LP/Layer1";
+const MESSAGE_PATH = "/StudioPLT/PLT-OP-LP/Message";
+const LOGIN_PATH = "/StudioPLT/PLT-OP-LP/Login";
+
+// ------------------------------------
+// Auth helpers
+// ------------------------------------
+function sign(value) {
+  return crypto
+    .createHmac("sha256", AUTH_COOKIE_SECRET || "")
+    .update(value)
+    .digest("hex");
+}
+
+function createCookieValue() {
+  const payload = "authorized";
+  const signature = sign(payload);
+  return `${payload}.${signature}`;
+}
+
+function verifyCookie(cookieValue) {
+  if (!cookieValue || typeof cookieValue !== "string") return false;
+
+  const [payload, signature] = cookieValue.split(".");
+  if (!payload || !signature) return false;
+
+  return payload === "authorized" && signature === sign(payload);
+}
 
 // ------------------------------------
 // Fetch Google Sheets
@@ -34,10 +70,86 @@ const fetchSheetRange = async (range) => {
 };
 
 // ------------------------------------
+// Server-side login route
+// Use: /server-login?token=YOUR_SECRET_TOKEN
+// ------------------------------------
+app.get("/server-login", (req, res) => {
+  try {
+    const token = String(req.query.token || "");
+
+    if (!SCREEN_LOGIN_TOKEN) {
+      return res.status(500).send("Missing SCREEN_LOGIN_TOKEN");
+    }
+
+    if (!AUTH_COOKIE_SECRET) {
+      return res.status(500).send("Missing AUTH_COOKIE_SECRET");
+    }
+
+    if (token !== SCREEN_LOGIN_TOKEN) {
+      return res.status(401).send("Invalid token");
+    }
+
+    res.cookie(AUTH_COOKIE_NAME, createCookieValue(), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false, // change to true if always using HTTPS
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+      path: "/",
+    });
+
+    return res.redirect(MAIN_PATH);
+  } catch (error) {
+    return res.status(500).send(error.message || "Login error");
+  }
+});
+
+// ------------------------------------
+// Optional logout route
+// ------------------------------------
+app.get("/server-logout", (req, res) => {
+  res.clearCookie(AUTH_COOKIE_NAME, { path: "/" });
+  return res.redirect(LOGIN_PATH);
+});
+
+// ------------------------------------
+// Protect ONLY the main page
+// Message page stays public
+// APIs stay public
+// ------------------------------------
+app.use((req, res, next) => {
+  const requestPath = req.path;
+
+  const isMainPath =
+    requestPath === MAIN_PATH || requestPath.startsWith(`${MAIN_PATH}/`);
+
+  const isPublicPath =
+    requestPath === MESSAGE_PATH ||
+    requestPath.startsWith(`${MESSAGE_PATH}/`) ||
+    requestPath === LOGIN_PATH ||
+    requestPath.startsWith(`${LOGIN_PATH}/`) ||
+    requestPath === "/server-login" ||
+    requestPath === "/server-logout" ||
+    requestPath.startsWith("/api/");
+
+  if (!isMainPath || isPublicPath) {
+    return next();
+  }
+
+  const cookieValue = req.cookies[AUTH_COOKIE_NAME];
+
+  if (verifyCookie(cookieValue)) {
+    return next();
+  }
+
+  return res.redirect(LOGIN_PATH);
+});
+
+// ------------------------------------
 // API ROUTES
 // ------------------------------------
 app.get("/api/sheets", async (req, res) => {
-  res.set("Cache-Control", "no-store"); // Force VPS to always get fresh data
+  res.set("Cache-Control", "no-store");
+
   try {
     const type = req.query.type;
 
@@ -141,7 +253,7 @@ app.get("/api/sheets", async (req, res) => {
       const rows = await fetchSheetRange("Quotes!A:D");
 
       if (rows.length < 2) {
-        return res.json([]); // ✅ Fixed: Use res.json instead of new Response
+        return res.json([]);
       }
 
       const headers = rows[0].map((h) => String(h || "").trim());
@@ -156,10 +268,7 @@ app.get("/api/sheets", async (req, res) => {
         .slice(1)
         .map((row, index) => {
           const rawTime = String(row[timestampIndex] || "").trim();
-
-          // We try to parse the time.
-          // If it's UTC from Apps Script, Date.parse handles it.
-          let timeMs = Date.parse(rawTime);
+          const timeMs = Date.parse(rawTime);
 
           return {
             id: index + 1,
@@ -170,11 +279,10 @@ app.get("/api/sheets", async (req, res) => {
         })
         .filter((q) => q.quote)
         .filter((q) => !Number.isNaN(q.timeMs))
-        // Filter for last 1 hour, allowing 5 mins future buffer for clock sync
         .filter((q) => q.timeMs >= oneHourAgo && q.timeMs <= now + 300000)
         .sort((a, b) => b.timeMs - a.timeMs);
 
-      return res.json(quotes); // ✅ Fixed: Use res.json
+      return res.json(quotes);
     }
 
     return res.status(400).json({ error: "Invalid type" });
@@ -202,7 +310,7 @@ app.post("/api/submit-quote", async (req, res) => {
       });
     }
 
-    const scriptUrl = process.env.QUOTE_SCRIPT_URL;
+    const scriptUrl = QUOTE_SCRIPT_URL;
 
     if (!scriptUrl) {
       return res.status(500).json({ error: "Missing QUOTE_SCRIPT_URL" });
@@ -245,11 +353,10 @@ app.post("/api/submit-quote", async (req, res) => {
 });
 
 // ------------------------------------
-// SERVE FRONTEND (IMPORTANT FIX HERE)
+// SERVE FRONTEND
 // ------------------------------------
 app.use(express.static(path.join(__dirname, "dist")));
 
-// ✅ Express 5 SAFE wildcard route
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
