@@ -73,7 +73,7 @@ export default function ScheduleBoard() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden p-2 text-white">
+    <div className="h-screen w-screen overflow-hidden p-2 bg-gray-800 text-white">
       <div className="grid h-full grid-cols-9 gap-2">
         {/* LEFT: LEADERBOARD */}
         <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-lg bg-black/30  max-[1750px]:p-4 p-6 backdrop-blur-md">
@@ -108,7 +108,7 @@ export default function ScheduleBoard() {
             <div className="flex h-full items-stretch gap-2 w-full">
               <div className="h-full flex-1 overflow-hidden">
                 {classes.length === 0 ? (
-                  <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-lg border border-white/10  px-6 py-4 text-center text-white/70"></div>
+                  <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-lg px-6 py-4 text-center text-white/70"></div>
                 ) : (
                   <div className="hide-scrollbar h-full overflow-x-auto overflow-y-hidden grid-cols-5">
                     <div className="grid-cols-5 flex h-full flex-row-reverse items-center gap-2 px-2">
