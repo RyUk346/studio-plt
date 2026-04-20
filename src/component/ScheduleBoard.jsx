@@ -76,7 +76,7 @@ export default function ScheduleBoard() {
     <div className="h-screen w-screen overflow-hidden p-2 text-white">
       <div className="grid h-full grid-cols-9 gap-2">
         {/* LEFT: LEADERBOARD */}
-        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-3xl  max-[1750px]:p-4 p-6 backdrop-blur-md">
+        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-3xl bg-black/30  max-[1750px]:p-4 p-6 backdrop-blur-md">
           <div className="border-b border-white/50 max-[1750px]:pb-2 pb-4">
             <h2 className="max-[1750px]:text-2xl text-4xl font-bold tracking-wide">
               {leaderboardHeading || "Leaderboard"}
