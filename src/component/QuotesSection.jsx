@@ -47,7 +47,7 @@ export default function QuotesSection({ quotes = [] }) {
   return (
     <div className="h-full w-full rounded-3xl py-2 ">
       <div className="flex h-full items-stretch gap-2">
-        <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-2xl border backdrop-blur-md px-8 py-4 text-center">
+        <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-300 backdrop-blur-md px-8 py-4 text-center">
           {currentQuote ? (
             <div>
               <div className="text-2xl font-medium leading-relaxed text-white">

@@ -97,7 +97,56 @@ app.get("/server-login", (req, res) => {
       path: "/",
     });
 
-    return res.redirect(MAIN_PATH);
+    return res.send(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Authorizing Device</title>
+          <style>
+            body {
+              margin: 0;
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #000;
+              color: #fff;
+              font-family: Arial, sans-serif;
+            }
+            .card {
+              text-align: center;
+              padding: 32px;
+              border: 1px solid rgba(255,255,255,0.12);
+              background: rgba(255,255,255,0.05);
+              border-radius: 24px;
+              backdrop-filter: blur(10px);
+            }
+            .title {
+              font-size: 32px;
+              font-weight: 700;
+              margin-bottom: 12px;
+            }
+            .sub {
+              color: rgba(255,255,255,0.7);
+              font-size: 18px;
+            }
+          </style>
+          <script>
+            setTimeout(() => {
+              window.location.replace("${MAIN_PATH}");
+            }, 1200);
+          </script>
+        </head>
+        <body>
+          <div class="card">
+            <div class="title">Device authorized</div>
+            <div class="sub">Logging in to main screen...</div>
+          </div>
+        </body>
+      </html>
+    `);
   } catch (error) {
     return res.status(500).send(error.message || "Login error");
   }
