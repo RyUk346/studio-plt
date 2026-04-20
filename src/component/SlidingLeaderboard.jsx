@@ -82,10 +82,10 @@ export default function SlidingLeaderboard({ leaders }) {
               const textColor = isFirst
                 ? "text-[#FFD700]"
                 : isSecond
-                  ? "text-slate-400"
+                  ? "text-slate-50"
                   : isThird
                     ? "text-[#CD7F32]"
-                    : "text-gray-600";
+                    : "text-[#C0C0C0]";
               const isActivePage = idx === pageIndex;
 
               return (
