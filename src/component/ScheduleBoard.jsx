@@ -108,7 +108,7 @@ export default function ScheduleBoard() {
             <div className="flex h-full items-stretch gap-2 w-full">
               <div className="h-full flex-1 overflow-hidden">
                 {classes.length === 0 ? (
-                  <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-lg border border-white/10 bg-white/5 px-6 py-4 text-center text-white/70"></div>
+                  <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-lg border border-white/10  px-6 py-4 text-center text-white/70"></div>
                 ) : (
                   <div className="hide-scrollbar h-full overflow-x-auto overflow-y-hidden grid-cols-5">
                     <div className="grid-cols-5 flex h-full flex-row-reverse items-center gap-2 px-2">
@@ -138,7 +138,7 @@ export default function ScheduleBoard() {
           <div className="flex-1" />
 
           {/* BOTTOM: QUOTES */}
-          <div className="max-[1750px]:h-20 h-35">
+          <div className="max-[1750px]:h-15 h-35">
             <QuotesSection quotes={quotes} />
           </div>
         </div>
