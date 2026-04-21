@@ -82,7 +82,9 @@ export default function QuoteFormPage() {
               type="tel"
               placeholder="Phone Number"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) =>
+                setPhoneNumber(e.target.value.replace(/\D/g, ""))
+              }
               className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
               required
             />
@@ -116,6 +118,32 @@ export default function QuoteFormPage() {
               </div>
             </div>
 
+            {/* Live Preview */}
+            <div className="">
+              <div className="mb-0.5 pl-1.5 text-sm font-bold">
+                Live Preview :
+              </div>
+
+              <div className="rounded-lg bg-black/25 backdrop-blur-md">
+                <div className="flex py-1.5 items-stretch">
+                  <div className="flex flex-1 items-center justify-center overflow-hidden  text-center">
+                    <div>
+                      <div
+                        className={`text-[14px] font-medium leading-relaxed ${
+                          quote.trim() ? "text-white" : "text-white/50"
+                        }`}
+                      >
+                        “{previewQuote}”
+                      </div>
+                      <div className="text-[10px] text-white/60">
+                        — {previewName}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={submitting || !quote.trim()}
@@ -130,29 +158,8 @@ export default function QuoteFormPage() {
           </div>
         </form>
 
-        {/* Live Preview */}
-        <div className="rounded-3xl border border-black/10 bg-gray-300 p-2 px-4">
-          <div className="mb-0.5 pl-1.5 text-md font-bold">Live Preview :</div>
-
-          <div className="rounded-lg border border-white/10 bg-black/25 backdrop-blur-md">
-            <div className="flex min-h-[60px] items-stretch">
-              <div className="flex flex-1 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 px-2  text-center">
-                <div>
-                  <div
-                    className={`text-md font-medium leading-relaxed ${
-                      quote.trim() ? "text-white" : "text-white/50"
-                    }`}
-                  >
-                    “{previewQuote}”
-                  </div>
-                  <div className="text-xs text-white/60">— {previewName}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 w-full flex items-center justify-between gap-2">
-          <h2 className="text-sm">Powered By</h2>
+        <div className="mt-6 w-full flex flex-col  items-start justify-start ">
+          <h2 className="text-xs text-[#48525C] -mt-1 font-sans">Powered By</h2>
           <a href="https://hyperglow.co.uk/">
             <img src={HGlogo} alt="Hyperglow" className="w-40" />
           </a>
