@@ -17,6 +17,9 @@ export default function QuoteFormPage() {
   const isNearLimit = remainingChars <= WARNING_THRESHOLD;
   const isAtLimit = remainingChars <= 0;
 
+  const previewName = displayName.trim() || "Anonymous";
+  const previewQuote = quote.trim() || "Your message preview will appear here";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -51,81 +54,109 @@ export default function QuoteFormPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-gray-200 px-4 text-black">
-      <div className="flex justify-between items-center gap-4 mb-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-200 px-4 py-2 text-black">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <img src={studioPlt} alt="Studio PLT" className="w-15" />
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-xl rounded-3xl border border-black/10 bg-gray-300 p-4"
-      >
-        <h1 className="text-2xl font-bold text-center">Submit Your Comment</h1>
 
-        <div className="mt-6 space-y-4">
-          <input
-            type="text"
-            placeholder="Display Name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
-            required
-          />
+      <div className="w-full max-w-xl space-y-2">
+        <form
+          onSubmit={handleSubmit}
+          className="w-full rounded-3xl border border-black/10 bg-gray-300 p-4"
+        >
+          <h1 className="text-center text-2xl font-bold">
+            Submit Your Comment
+          </h1>
 
-          <input
-            type="tel"
-            placeholder="Phone Number"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
-            required
-          />
-
-          <div>
-            <textarea
-              placeholder="Write your message"
-              value={quote}
-              onChange={(e) => setQuote(e.target.value)}
-              maxLength={QUOTE_MAX_LENGTH}
-              className="h-32 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
+          <div className="mt-6 space-y-4">
+            <input
+              type="text"
+              placeholder="Display Name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
               required
             />
 
-            <div className="mt-2 flex items-center justify-between">
-              <div className="text-xs text-black/50">
-                Maximum {QUOTE_MAX_LENGTH} characters
+            <input
+              type="tel"
+              placeholder="Phone Number"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
+              required
+            />
+
+            <div>
+              <textarea
+                placeholder="Write your message"
+                value={quote}
+                onChange={(e) => setQuote(e.target.value)}
+                maxLength={QUOTE_MAX_LENGTH}
+                className="h-32 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
+                required
+              />
+
+              <div className="mt-2 flex items-center justify-between">
+                <div className="text-xs text-black/50">
+                  Maximum {QUOTE_MAX_LENGTH} characters
+                </div>
+
+                <div
+                  className={`text-sm font-medium ${
+                    isAtLimit
+                      ? "text-red-500"
+                      : isNearLimit
+                        ? "text-yellow-500"
+                        : "text-black/60"
+                  }`}
+                >
+                  {quote.length}/{QUOTE_MAX_LENGTH}
+                </div>
               </div>
-              <div
-                className={`text-sm font-medium ${
-                  isAtLimit
-                    ? "text-red-500"
-                    : isNearLimit
-                      ? "text-yellow-500"
-                      : "text-black/60"
-                }`}
-              >
-                {quote.length}/{QUOTE_MAX_LENGTH}
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting || !quote.trim()}
+              className="w-full rounded-xl bg-black px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? "Submitting..." : "Submit"}
+            </button>
+
+            {message && (
+              <div className="text-center text-sm text-black/80">{message}</div>
+            )}
+          </div>
+        </form>
+
+        {/* Live Preview */}
+        <div className="rounded-3xl border border-black/10 bg-gray-300 p-2 px-4">
+          <div className="mb-0.5 pl-1.5 text-md font-bold">Live Preview :</div>
+
+          <div className="rounded-lg border border-white/10 bg-black/25 backdrop-blur-md">
+            <div className="flex min-h-[60px] items-stretch">
+              <div className="flex flex-1 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 px-2  text-center">
+                <div>
+                  <div
+                    className={`text-md font-medium leading-relaxed ${
+                      quote.trim() ? "text-white" : "text-white/50"
+                    }`}
+                  >
+                    “{previewQuote}”
+                  </div>
+                  <div className="text-xs text-white/60">— {previewName}</div>
+                </div>
               </div>
             </div>
           </div>
-
-          <button
-            type="submit"
-            disabled={submitting || !quote.trim()}
-            className="w-full rounded-xl bg-black px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting ? "Submitting..." : "Submit"}
-          </button>
-
-          {message && (
-            <div className="text-center text-sm text-black/80">{message}</div>
-          )}
         </div>
-      </form>
-      <div className="flex gap-2 justify-center items-center mt-4">
-        <h2>Powered By,</h2>
-        <a href="https://hyperglow.co.uk/">
-          <img src={HGlogo} alt="Hyperglow" className="w-40" />
-        </a>
+        <div className="mt-4 w-full flex items-center justify-between gap-2">
+          <h2 className="text-sm">Powered By</h2>
+          <a href="https://hyperglow.co.uk/">
+            <img src={HGlogo} alt="Hyperglow" className="w-40" />
+          </a>
+        </div>
       </div>
     </div>
   );

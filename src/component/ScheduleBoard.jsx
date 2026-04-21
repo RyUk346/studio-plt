@@ -36,10 +36,10 @@ export default function ScheduleBoard() {
     year: "numeric",
   });
 
-  const currentTime = now.toLocaleTimeString("en-US", {
-    hour: "numeric",
+  const currentTime = now.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
+    hour12: false,
   });
 
   // --- Logic to handle Countdown Handover ---
@@ -105,7 +105,7 @@ export default function ScheduleBoard() {
         <div className="max-[1750px]:col-span-7 col-span-4 flex h-full flex-col">
           {/* TOP: ROUTINE */}
           <div className="max-[1750px]:h-22 h-35 rounded-lg  backdrop-blur-md flex justify-end">
-            <div className="flex h-full items-stretch gap-2 w-full">
+            <div className="flex h-full items-stretch w-full">
               <div className="h-full flex-1 overflow-hidden">
                 {classes.length === 0 ? (
                   <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-lg px-6 py-4 text-center text-white/70"></div>
