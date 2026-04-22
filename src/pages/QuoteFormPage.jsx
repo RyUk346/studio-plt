@@ -3,7 +3,7 @@ import studioPlt from "../assets/Studio-PLT-Logo-grey.svg";
 import HGlogo from "../assets/hyperglow-logo.png.webp";
 import { API_BASE } from "../utils/api";
 
-const QUOTE_MAX_LENGTH = 200;
+const QUOTE_MAX_LENGTH = 100;
 const WARNING_THRESHOLD = 25;
 
 export default function QuoteFormPage() {
@@ -17,7 +17,7 @@ export default function QuoteFormPage() {
   const isNearLimit = remainingChars <= WARNING_THRESHOLD;
   const isAtLimit = remainingChars <= 0;
 
-  const previewName = displayName.trim() || "Anonymous";
+  const previewName = displayName.trim() || "Your Name";
   const previewQuote = quote.trim() || "Your message preview will appear here";
 
   const handleSubmit = async (e) => {
@@ -64,9 +64,7 @@ export default function QuoteFormPage() {
           onSubmit={handleSubmit}
           className="w-full rounded-3xl border border-black/10 bg-gray-300 p-4"
         >
-          <h1 className="text-center text-2xl font-bold">
-            Submit Your Comment
-          </h1>
+          <h1 className="text-center text-2xl font-bold">Share a Message</h1>
 
           <div className="mt-6 space-y-4">
             <input
@@ -158,8 +156,8 @@ export default function QuoteFormPage() {
           </div>
         </form>
 
-        <div className="mt-6 w-full flex flex-col  items-start justify-start ">
-          <h2 className="text-xs text-[#48525C] -mt-1 font-sans">Powered By</h2>
+        <div className="mt-6 w-full flex flex-col  items-center justify-start ">
+          <h2 className="text-xs text-[#48525C] font-sans">Powered By</h2>
           <a href="https://hyperglow.co.uk/">
             <img src={HGlogo} alt="Hyperglow" className="w-40" />
           </a>
