@@ -9,7 +9,7 @@ export default function ClassCard({ item, forceShowBadge = false }) {
   const badgeClasses = isLive ? " text-emerald-300" : " text-amber-300";
 
   return (
-    <div className="flex h-full w-[274px] flex-shrink-0 flex-col justify-center rounded-lg border border-white/10 bg-black/30 px-4 py-2 backdrop-blur-md">
+    <div className="flex h-full w-[274px] flex-shrink-0 flex-col justify-center rounded-lg border border-white/10 bg-black/30 px-4 py-1 backdrop-blur-md">
       <div className="flex items-center justify-between gap-0">
         <div className="max-[1750px]:text-sm text-lg font-bold text-white">
           {formatTime(item.start)}
