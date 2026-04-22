@@ -25,12 +25,12 @@ export default function ClassCard({ item, forceShowBadge = false }) {
 
       {/* Sliding Title Container */}
       <div className="max-[1750px]:mt-0 mt-3 overflow-hidden">
-        <div className="max-[1750px]:text-lg text-xl font-semibold leading-tight text-white whitespace-nowrap hover:pause-animate">
+        <div className="max-[1750px]:text-[16px] text-xl font-semibold leading-tight text-white whitespace-nowrap hover:pause-animate">
           <div className="inline-block animate-slide-text">{item.title}</div>
         </div>
       </div>
 
-      <div className="max-[1750px]:mt-0 mt-1 text-lg text-white/70 truncate">
+      <div className="max-[1750px]:mt-0 mt-1 text-sm text-white/70 truncate">
         {item.instructor || "Instructor"}
       </div>
     </div>

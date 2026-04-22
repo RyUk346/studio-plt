@@ -317,7 +317,10 @@ app.get("/api/sheets", async (req, res) => {
         .slice(1)
         .map((row, index) => {
           const rawTime = String(row[timestampIndex] || "").trim();
-          const timeMs = Date.parse(rawTime);
+
+          // Convert the UK string back into a timestamp MS
+          // We treat the string as local time
+          const timeMs = new Date(rawTime).getTime();
 
           return {
             id: index + 1,
@@ -328,7 +331,8 @@ app.get("/api/sheets", async (req, res) => {
         })
         .filter((q) => q.quote)
         .filter((q) => !Number.isNaN(q.timeMs))
-        .filter((q) => q.timeMs >= oneHourAgo && q.timeMs <= now + 300000)
+        // Increase the filter window to 2 hours just to be safe with timezone offsets
+        .filter((q) => q.timeMs >= Date.now() - 120 * 60 * 1000)
         .sort((a, b) => b.timeMs - a.timeMs);
 
       return res.json(quotes);
