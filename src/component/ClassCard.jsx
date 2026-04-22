@@ -25,7 +25,7 @@ export default function ClassCard({ item, forceShowBadge = false }) {
 
       {/* Sliding Title Container */}
       <div className="max-[1750px]:mt-0 mt-3 overflow-hidden">
-        <div className="max-[1750px]:text-[16px] text-xl font-semibold leading-tight text-white ">
+        <div className="max-[1750px]:text-sm text-xl font-semibold leading-tight text-white ">
           <div className="inline-block ">{item.title}</div>
         </div>
       </div>
