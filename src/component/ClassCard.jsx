@@ -6,20 +6,14 @@ export default function ClassCard({ item, forceShowBadge = false }) {
   const timing = getClassTimingState(item.start, item.end, now);
 
   const isLive = timing.state === "live";
-
-  // Define colors based on state
-  const badgeClasses = isLive
-    ? "bg-emerald-500/20 text-emerald-300"
-    : "bg-amber-500/20 text-amber-300";
+  const badgeClasses = isLive ? " text-emerald-300" : " text-amber-300";
 
   return (
-    <div className="flex h-full w-[222px] flex-shrink-0 flex-col justify-center rounded-lg border border-white/10 bg-black/30 px-4 py-4 backdrop-blur-md">
+    <div className="flex h-full w-[274px] flex-shrink-0 flex-col justify-center rounded-lg border border-white/10 bg-black/30 px-4 py-2 backdrop-blur-md">
       <div className="flex items-center justify-between gap-0">
         <div className="max-[1750px]:text-sm text-lg font-bold text-white">
           {formatTime(item.start)}
         </div>
-
-        {/* Show badge if the class is LIVE OR if the parent says this class is "Next Up" */}
         {(isLive || forceShowBadge) && (
           <div
             className={`rounded-full px-3 py-1 text-xs font-medium ${badgeClasses}`}
@@ -29,11 +23,14 @@ export default function ClassCard({ item, forceShowBadge = false }) {
         )}
       </div>
 
-      <div className="max-[1750px]:mt-0 mt-3 max-[1750px]:text-lg text-xl font-semibold leading-tight text-white">
-        {item.title}
+      {/* Sliding Title Container */}
+      <div className="max-[1750px]:mt-0 mt-3 overflow-hidden">
+        <div className="max-[1750px]:text-lg text-xl font-semibold leading-tight text-white whitespace-nowrap hover:pause-animate">
+          <div className="inline-block animate-slide-text">{item.title}</div>
+        </div>
       </div>
 
-      <div className="max-[1750px]:mt-0 mt-1 text-lg text-white/70">
+      <div className="max-[1750px]:mt-0 mt-1 text-lg text-white/70 truncate">
         {item.instructor || "Instructor"}
       </div>
     </div>

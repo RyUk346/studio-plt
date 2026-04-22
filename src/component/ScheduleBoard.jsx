@@ -37,9 +37,9 @@ export default function ScheduleBoard() {
   });
 
   const currentTime = now.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
-    hour12: false,
+    hour12: true,
   });
 
   // --- Logic to handle Countdown Handover ---
