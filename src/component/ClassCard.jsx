@@ -6,7 +6,9 @@ export default function ClassCard({ item, forceShowBadge = false }) {
   const timing = getClassTimingState(item.start, item.end, now);
 
   const isLive = timing.state === "live";
-  const badgeClasses = isLive ? " text-emerald-300" : " text-amber-300";
+  const badgeClasses = isLive
+    ? "bg-emerald-300/30 text-emerald-300"
+    : " text-amber-300";
 
   return (
     <div className="flex h-full w-[274px] flex-shrink-0 flex-col justify-center rounded-lg border border-white/10 bg-black/30 px-4 py-1 backdrop-blur-md">
@@ -16,7 +18,7 @@ export default function ClassCard({ item, forceShowBadge = false }) {
         </div>
         {(isLive || forceShowBadge) && (
           <div
-            className={`rounded-full px-3 py-1 text-xs font-medium ${badgeClasses}`}
+            className={`rounded-full px-3 py-0.5 -mt-1 text-xs font-medium ${badgeClasses}`}
           >
             {timing.label}
           </div>
