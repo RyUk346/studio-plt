@@ -2,9 +2,11 @@ import { useState } from "react";
 import studioPlt from "../assets/Studio-PLT-Logo-grey.svg";
 import HGlogo from "../assets/hyperglow-logo.png.webp";
 import { API_BASE } from "../utils/api";
+import { isMessageSafe } from "../utils/messageFilter";
 
 const QUOTE_MAX_LENGTH = 100;
 const WARNING_THRESHOLD = 25;
+const NAME_MAX_LENGTH = 12;
 
 export default function QuoteFormPage() {
   const [displayName, setDisplayName] = useState("");
@@ -12,6 +14,7 @@ export default function QuoteFormPage() {
   const [quote, setQuote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [isError, setIsError] = useState(false);
 
   const remainingChars = QUOTE_MAX_LENGTH - quote.length;
   const isNearLimit = remainingChars <= WARNING_THRESHOLD;
@@ -22,31 +25,48 @@ export default function QuoteFormPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const cleanName = displayName.trim();
+    const cleanPhone = phoneNumber.trim();
+    const cleanQuote = quote.trim();
+
+    if (!isMessageSafe(cleanName) || !isMessageSafe(cleanQuote)) {
+      setIsError(true);
+      setMessage("Please avoid inappropriate language.");
+      return;
+    }
+
     setSubmitting(true);
-    setMessage("");
+    setMessage("Your message will appear shortly if approved.");
+    setIsError(false);
 
     try {
       const res = await fetch(`${API_BASE}/api/submit-quote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          displayName,
-          phoneNumber,
-          quote,
+          displayName: cleanName,
+          phoneNumber: cleanPhone,
+          quote: cleanQuote,
         }),
       });
 
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.success) {
-        throw new Error(data?.error || "Failed to submit comment");
+        setIsError(true);
+        setMessage(data?.error || "This message is against our policy.");
+        setSubmitting(false);
+        return;
       }
 
-      setMessage("Thank you! Your comment has been submitted.");
+      setIsError(false);
+      setMessage("Thank you! Your message has been submitted.");
       setDisplayName("");
       setPhoneNumber("");
       setQuote("");
     } catch (error) {
+      setIsError(true);
       setMessage(error.message || "Something went wrong.");
     } finally {
       setSubmitting(false);
@@ -71,7 +91,12 @@ export default function QuoteFormPage() {
               type="text"
               placeholder="Display Name"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => {
+                setDisplayName(e.target.value);
+                setMessage("");
+                setIsError(false);
+              }}
+              maxLength={12}
               className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
               required
             />
@@ -80,9 +105,11 @@ export default function QuoteFormPage() {
               type="tel"
               placeholder="Phone Number"
               value={phoneNumber}
-              onChange={(e) =>
-                setPhoneNumber(e.target.value.replace(/\D/g, ""))
-              }
+              onChange={(e) => {
+                setPhoneNumber(e.target.value.replace(/\D/g, ""));
+                setMessage("");
+                setIsError(false);
+              }}
               className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
               required
             />
@@ -91,7 +118,11 @@ export default function QuoteFormPage() {
               <textarea
                 placeholder="Write your message"
                 value={quote}
-                onChange={(e) => setQuote(e.target.value)}
+                onChange={(e) => {
+                  setQuote(e.target.value);
+                  setMessage("");
+                  setIsError(false);
+                }}
                 maxLength={QUOTE_MAX_LENGTH}
                 className="h-32 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
                 required
@@ -116,15 +147,14 @@ export default function QuoteFormPage() {
               </div>
             </div>
 
-            {/* Live Preview */}
-            <div className="">
+            <div>
               <div className="mb-0.5 pl-1.5 text-sm font-bold">
                 Live Preview :
               </div>
 
               <div className="rounded-lg bg-black/25 backdrop-blur-md">
-                <div className="flex py-1.5 items-stretch">
-                  <div className="flex flex-1 items-center justify-center overflow-hidden  text-center">
+                <div className="flex items-stretch py-1.5">
+                  <div className="flex flex-1 items-center justify-center overflow-hidden text-center">
                     <div>
                       <div
                         className={`text-[14px] font-medium leading-relaxed ${
@@ -151,13 +181,21 @@ export default function QuoteFormPage() {
             </button>
 
             {message && (
-              <div className="text-center text-sm text-black/80">{message}</div>
+              <div
+                className={`rounded-lg px-3 py-2 text-center text-sm font-medium ${
+                  isError
+                    ? "border border-red-500/30 bg-red-500/10 text-red-600"
+                    : "border border-green-500/30 bg-green-500/10 text-green-700"
+                }`}
+              >
+                {message}
+              </div>
             )}
           </div>
         </form>
 
-        <div className="mt-6 w-full flex flex-col  items-center justify-start ">
-          <h2 className="text-xs text-[#48525C] font-sans">Powered By</h2>
+        <div className="mt-6 flex w-full flex-col items-center justify-start">
+          <h2 className="font-sans text-xs text-[#48525C]">Powered By</h2>
           <a href="https://hyperglow.co.uk/">
             <img src={HGlogo} alt="Hyperglow" className="w-40" />
           </a>

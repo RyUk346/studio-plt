@@ -1,9 +1,63 @@
 import { useEffect, useMemo, useState } from "react";
 
-const ITEMS_PER_PAGE = window.innerWidth <= 1750 ? 8 : 10;
+const ITEMS_PER_PAGE = 8;
 const SLIDE_INTERVAL_MS = 10000;
 
-export default function SlidingLeaderboard({ leaders }) {
+function formatMemberName(name = "") {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0];
+
+  const firstName = parts[0];
+  const lastInitial = parts[parts.length - 1][0]?.toUpperCase() || "";
+
+  return `${firstName} ${lastInitial}`;
+}
+
+function getTier(visits = 0, milestones = {}) {
+  const count = Number(visits) || 0;
+
+  const gold = Number(milestones.gold || 40);
+  const silver = Number(milestones.silver || 25);
+  const bronze = Number(milestones.bronze || 10);
+
+  if (count >= gold) {
+    return {
+      label: `${gold}+ Club`,
+      cardBg: "border-white/20 bg-[#FFD70014]",
+      badgeBg: "bg-[#FFD70040] text-yellow-300 border border-yellow-400/30",
+      textColor: "text-[#FFD700]",
+    };
+  }
+
+  if (count >= silver) {
+    return {
+      label: `${silver}+ Club`,
+      cardBg: "border-white/20 bg-[#C0C0C014]",
+      badgeBg: "bg-[#C0C0C040] text-slate-50 border border-slate-300/30",
+      textColor: "text-slate-50",
+    };
+  }
+
+  if (count >= bronze) {
+    return {
+      label: `${bronze}+ Club`,
+      cardBg: "border-white/20 bg-[#CD7F3214]",
+      badgeBg: "bg-[#CD7F3240] text-orange-300 border border-orange-400/30",
+      textColor: "text-[#CD7F32]",
+    };
+  }
+
+  return {
+    label: `${count}`,
+    cardBg: "border-white/20",
+    badgeBg: "text-[#C0C0C0] border border-white/10",
+    textColor: "text-[#C0C0C0]",
+  };
+}
+
+export default function SlidingLeaderboard({ leaders, milestones }) {
   const pages = useMemo(() => {
     const chunks = [];
 
@@ -49,49 +103,15 @@ export default function SlidingLeaderboard({ leaders }) {
         style={{ transform: `translateY(-${pageIndex * 100}%)` }}
       >
         {pages.map((page, idx) => (
-          <div key={idx} className="h-full max-[1750px]:space-y-1 space-y-3">
+          <div key={idx} className="h-full space-y-3 max-[1750px]:space-y-1">
             {page.map((item, itemIndex) => {
-              const isFirst = item.rank === 1;
-              const isSecond = item.rank === 2;
-              const isThird = item.rank === 3;
-
-              const cardBg = isFirst
-                ? "border-white/20"
-                : isSecond
-                  ? "border-white/20"
-                  : isThird
-                    ? "border-white/20"
-                    : "border-white/20";
-
-              const rankBg = isFirst
-                ? "bg-[#FFB300] text-black"
-                : isSecond
-                  ? "bg-[#C0C0C0] text-black"
-                  : isThird
-                    ? "bg-[#CD7F32] text-black"
-                    : " text-[#C0C0C0]";
-
-              const visitBg = isFirst
-                ? "bg-[#FFD70040] text-yellow-300 border border-yellow-400/30"
-                : isSecond
-                  ? "bg-[#C0C0C040] text-slate-50 border border-slate-300/30"
-                  : isThird
-                    ? "bg-[#CD7F3240] text-orange-300 border border-orange-400/30"
-                    : " text-[#C0C0C0] border border-white/10";
-
-              const textColor = isFirst
-                ? "text-[#FFD700]"
-                : isSecond
-                  ? "text-slate-50"
-                  : isThird
-                    ? "text-[#CD7F32]"
-                    : "text-[#C0C0C0]";
+              const tier = getTier(item.visits, milestones);
               const isActivePage = idx === pageIndex;
 
               return (
                 <div
-                  key={`${item.rank}-${item.name}`}
-                  className={`rounded-2xl border px-4 max-[1750px]:py-2 py-4 backdrop-blur-md transition-all duration-700 ease-out ${cardBg} ${
+                  key={`${item.name}-${item.visits}`}
+                  className={`rounded-2xl border px-4 py-4 backdrop-blur-md transition-all duration-700 ease-out max-[1750px]:py-2 ${tier.cardBg} ${
                     isActivePage && animateCards
                       ? "translate-x-0 opacity-100"
                       : "-translate-x-16 opacity-0"
@@ -104,30 +124,16 @@ export default function SlidingLeaderboard({ leaders }) {
                   }}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex gap-4 justify-center items-center">
-                      <div
-                        className={`flex max-[1750px]:h-5 max-[1750px]:w-5 h-9 w-9 items-center justify-center rounded-full max-[1750px]:text-xs text-lg font-semibold ${rankBg}`}
-                      >
-                        {item.rank === 1
-                          ? "🥇"
-                          : item.rank === 2
-                            ? "🥈"
-                            : item.rank === 3
-                              ? "🥉"
-                              : item.rank}
-                      </div>
-
-                      <div
-                        className={`max-[1750px]:text-lg max-[1750px]:font-medium text-2xl font-semibold leading-tight ${textColor}`}
-                      >
-                        {item.name}
-                      </div>
+                    <div
+                      className={`text-2xl font-semibold leading-tight max-[1750px]:text-lg max-[1750px]:font-medium ${tier.textColor}`}
+                    >
+                      {formatMemberName(item.name)}
                     </div>
 
                     <div
-                      className={`rounded-full px-3 py-1 text-lg max-[1750px]:text-xs ${visitBg}`}
+                      className={`rounded-full px-3 py-1 text-lg max-[1750px]:text-xs ${tier.badgeBg}`}
                     >
-                      {item.visits} visits
+                      {tier.label}
                     </div>
                   </div>
                 </div>

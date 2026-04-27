@@ -59,7 +59,8 @@ export default function QuotesSection({ quotes = [] }) {
             </div>
           ) : (
             <div className="max-[1750px]:text-lg text-2xl font-medium text-white/70">
-              Scan QR code to share a message
+              Scan QR code to share your motivational message to the Studio PLT
+              community
             </div>
           )}
         </div>

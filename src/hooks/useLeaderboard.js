@@ -5,6 +5,11 @@ export default function useLeaderboard() {
   const [leaders, setLeaders] = useState([]);
   const [heading, setHeading] = useState("");
   const [subheading, setSubheading] = useState("");
+  const [milestones, setMilestones] = useState({
+    gold: 40,
+    silver: 25,
+    bronze: 10,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -12,20 +17,24 @@ export default function useLeaderboard() {
     const fetchLeaderboard = async () => {
       try {
         const res = await fetch(`${API_BASE}/api/sheets?type=leaderboard`);
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => null);
-          throw new Error(
-            errorData?.error || `HTTP ${res.status} ${res.statusText}`,
-          );
-        }
-
         const data = await res.json();
 
-        setLeaders(data.leaders || []);
+        if (!res.ok) {
+          throw new Error(data?.error || "Failed to load leaderboard");
+        }
+
         setHeading(data.heading || "");
         setSubheading(data.subheading || "");
+        setLeaders(data.leaders || []);
+        setMilestones(
+          data.milestones || {
+            gold: 40,
+            silver: 25,
+            bronze: 10,
+          },
+        );
+        setError("");
       } catch (err) {
-        console.error("Leaderboard fetch error:", err);
         setError(err.message || "Failed to load leaderboard");
       } finally {
         setLoading(false);
@@ -35,8 +44,16 @@ export default function useLeaderboard() {
     fetchLeaderboard();
 
     const interval = setInterval(fetchLeaderboard, 60 * 1000);
+
     return () => clearInterval(interval);
   }, []);
 
-  return { leaders, heading, subheading, loading, error };
+  return {
+    leaders,
+    heading,
+    subheading,
+    milestones,
+    loading,
+    error,
+  };
 }

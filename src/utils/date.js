@@ -12,17 +12,16 @@ export const formatDuration = (ms) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (minutes === 0 && seconds < 60) {
-    return "<1m"; // Show <1m if the time is less than 1 minute
-  }
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m `;
+    return `${hours}h ${minutes}m`;
   }
 
-  return `${minutes}m `;
+  if (minutes <= 0) {
+    return "<1m";
+  }
+
+  return `${minutes}m`;
 };
 
 export const getClassTimingState = (

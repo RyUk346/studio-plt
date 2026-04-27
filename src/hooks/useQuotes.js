@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/api";
+import { isMessageSafe } from "../utils/messageFilter";
 
 export default function useQuotes() {
   const [quotes, setQuotes] = useState([]);
@@ -13,7 +14,7 @@ export default function useQuotes() {
         const data = await res.json();
 
         if (Array.isArray(data)) {
-          setQuotes(data); // The API already filtered for the last 1 hour
+          setQuotes(data.filter((item) => isMessageSafe(item.quote)));
         }
       } catch (err) {
         console.error("Error fetching quotes:", err);

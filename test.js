@@ -329,16 +329,16 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "quotes") {
-      const rows = await fetchSheetRange("Quotes!A:F");
+      const rows = await fetchSheetRange("Quotes!A:D");
 
-      if (rows.length < 2) return res.json([]);
+      if (rows.length < 2) {
+        return res.json([]);
+      }
 
       const headers = rows[0].map((h) => String(h || "").trim());
-
       const timestampIndex = headers.indexOf("Timestamp");
       const displayNameIndex = headers.indexOf("Display Name");
       const quoteIndex = headers.indexOf("Quote");
-      const statusIndex = headers.indexOf("Status");
 
       const quotes = rows
         .slice(1)
@@ -351,18 +351,10 @@ app.get("/api/sheets", async (req, res) => {
             timeMs,
             displayName: String(row[displayNameIndex] || "").trim(),
             quote: String(row[quoteIndex] || "").trim(),
-
-            // 🔴 SAFE STATUS HANDLING
-            status:
-              statusIndex !== -1 && row.length > statusIndex
-                ? String(row[statusIndex] || "")
-                    .trim()
-                    .toLowerCase()
-                : "approved",
           };
         })
         .filter((q) => q.quote)
-        .filter((q) => q.status === "approved") // 🔴 CRITICAL
+        .filter((q) => isMessageSafe(q.quote) && isMessageSafe(q.displayName))
         .filter((q) => !Number.isNaN(q.timeMs))
         .filter((q) => q.timeMs >= Date.now() - 120 * 60 * 1000)
         .sort((a, b) => b.timeMs - a.timeMs);

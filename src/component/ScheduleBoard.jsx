@@ -1,18 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import useRoutine from "../hooks/useRoutine";
 import ClassCard from "./ClassCard";
 import SlidingLeaderboard from "./SlidingLeaderboard";
 import useLeaderboard from "../hooks/useLeaderboard";
 import useQuotes from "../hooks/useQuotes";
 import QuotesSection from "./QuotesSection";
-import { getClassTimingState } from "../utils/date"; // Ensure this path is correct
+import { getClassTimingState } from "../utils/date";
+import WeatherWidget from "./WeatherWidget";
+import useWeather from "../hooks/useWeather";
 
 export default function ScheduleBoard() {
+  const weather = useWeather();
   const { classes, loading, error } = useRoutine();
   const {
     leaders,
     heading: leaderboardHeading,
     subheading: leaderboardSubheading,
+    milestones,
     loading: leaderLoading,
     error: leaderError,
   } = useLeaderboard();
@@ -21,7 +25,6 @@ export default function ScheduleBoard() {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    // Update every second to ensure the "Live" transition is snappy
     const interval = setInterval(() => {
       setNow(new Date());
     }, 1000);
@@ -36,25 +39,26 @@ export default function ScheduleBoard() {
     year: "numeric",
   });
 
-  const currentTime = now.toLocaleTimeString("en-GB", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  const currentTime = now
+    .toLocaleTimeString("en-GB", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toUpperCase();
 
-  // --- Logic to handle Countdown Handover ---
-  let countdownIndex = 0;
-  if (classes && classes.length > 0) {
-    const firstClassTiming = getClassTimingState(
-      classes[0].start,
-      classes[0].end,
-      now,
-    );
-    // If the first class is already LIVE, set the countdown badge to the NEXT class (index 1)
-    if (firstClassTiming.state === "live" && classes.length > 1) {
-      countdownIndex = 1;
-    }
-  }
+  const selectedClass = useMemo(() => {
+    if (!classes?.length) return null;
+
+    const liveClass = classes.find((item) => {
+      const timing = getClassTimingState(item.start, item.end, now);
+      return timing.state === "live";
+    });
+
+    if (liveClass) return liveClass;
+
+    return classes[0] || null;
+  }, [classes, now]);
 
   if (loading) {
     return (
@@ -74,19 +78,18 @@ export default function ScheduleBoard() {
 
   return (
     <div className="h-screen w-screen overflow-hidden p-2 text-white">
-      <div className="grid h-full grid-cols-9 gap-2">
-        {/* LEFT: LEADERBOARD */}
-        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-lg bg-black/30  max-[1750px]:p-4 p-6 backdrop-blur-md">
-          <div className="border-b border-white/50 max-[1750px]:pb-2 pb-4">
-            <h2 className="max-[1750px]:text-2xl text-4xl font-bold tracking-wide">
+      <div className="grid h-full grid-cols-12 gap-2">
+        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-lg bg-black/30 p-6 backdrop-blur-md max-[1750px]:p-4">
+          <div className="border-b border-white/50 pb-4 max-[1750px]:pb-2">
+            <h2 className="text-4xl font-bold tracking-wide max-[1750px]:text-2xl">
               {leaderboardHeading || "Leaderboard"}
             </h2>
-            <p className="mt-1 max-[1750px]:text-sm text-lg text-white/60">
-              {leaderboardSubheading || "Top members by total visits"}
+            <p className="mt-1 text-lg text-white/60 max-[1750px]:text-sm">
+              {leaderboardSubheading || "Member milestones"}
             </p>
           </div>
 
-          <div className="max-[1750px]:mt-4 mt-6 flex-1 overflow-hidden">
+          <div className="mt-6 flex-1 overflow-hidden max-[1750px]:mt-4">
             {leaderLoading ? (
               <div className="text-white/70">Loading leaderboard...</div>
             ) : leaderError ? (
@@ -96,39 +99,35 @@ export default function ScheduleBoard() {
             ) : leaders.length === 0 ? (
               <div className="text-white/70">No leaderboard data found</div>
             ) : (
-              <SlidingLeaderboard leaders={leaders} />
+              <SlidingLeaderboard leaders={leaders} milestones={milestones} />
             )}
           </div>
         </div>
 
-        {/* RIGHT: TOP ROUTINE + BOTTOM QUOTES */}
-        <div className="max-[1750px]:col-span-7 col-span-4 flex h-full flex-col">
-          {/* TOP: ROUTINE */}
-          <div className="max-[1750px]:h-22 h-35 rounded-lg  backdrop-blur-md flex justify-end">
-            <div className="flex h-full items-stretch w-full">
-              <div className="h-full flex-1 overflow-hidden">
-                {classes.length === 0 ? (
-                  <div className="flex h-full w-full items-center max-[1750px]:text-lg text-2xl font-medium justify-center rounded-lg px-6 py-4 text-center text-white/70"></div>
-                ) : (
-                  <div className="hide-scrollbar h-full overflow-x-auto overflow-y-hidden grid-cols-5">
-                    <div className="grid-cols-5 flex h-full flex-row-reverse items-center gap-2 px-2">
-                      {classes.map((item) => (
-                        <ClassCard
-                          key={item.id}
-                          item={item}
-                          // We removed the showCountdown logic from here
-                          // because the Card will now handle it internally
-                        />
-                      ))}
-                    </div>
+        <div className="col-span-10 flex h-full flex-col">
+          <div className="flex h-35 max-[1750px]:h-18 justify-end rounded-lg backdrop-blur-md ">
+            <div className="flex h-full w-full items-stretch justify-end">
+              <div className="flex h-full items-center px-2">
+                {!selectedClass ? (
+                  <div className="flex h-full items-center justify-center text-2xl text-white/70">
+                    No more classes today
                   </div>
+                ) : (
+                  <ClassCard key={selectedClass.id} item={selectedClass} />
                 )}
               </div>
 
-              {/* Time + Date Section */}
-              <div className="flex h-full min-w-[100px] flex-col items-end justify-center overflow-hidden rounded-lg border border-white/10 bg-black/10 max-[1750px]:px-4 px-6 py-4 text-right">
+              <WeatherWidget
+                temperature={weather.temperature}
+                icon={weather.icon}
+                label={weather.label}
+                loading={weather.loading}
+                error={weather.error}
+              />
+
+              <div className="ml-2 flex h-full min-w-[100px] flex-col items-end justify-center overflow-hidden rounded-lg border border-white/10 bg-black/10 px-6 py-4 text-right max-[1750px]:px-4">
                 <div className="text-sm text-white/60">{currentDate}</div>
-                <div className="mt-2 max-[1750px]:text-xl text-3xl font-bold tabular-nums text-white">
+                <div className="mt-2 text-3xl font-bold tabular-nums text-white max-[1750px]:text-xl">
                   {currentTime}
                 </div>
               </div>
@@ -137,8 +136,7 @@ export default function ScheduleBoard() {
 
           <div className="flex-1" />
 
-          {/* BOTTOM: QUOTES */}
-          <div className="max-[1750px]:h-15 h-35">
+          <div className="h-35 max-[1750px]:h-15">
             <QuotesSection quotes={quotes} />
           </div>
         </div>
