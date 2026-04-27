@@ -251,30 +251,14 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "leaderboard") {
-      const rows = await fetchSheetRange("Leaderboard!A:F");
+      const rows = await fetchSheetRange("Leaderboard!A:C");
 
       if (rows.length < 4) {
-        return res.json({
-          heading: "",
-          subheading: "",
-          leaders: [],
-          milestones: {
-            gold: 40,
-            silver: 25,
-            bronze: 10,
-          },
-        });
+        return res.json({ heading: "", subheading: "", leaders: [] });
       }
 
       const heading = String(rows[0]?.[1] || "").trim();
       const subheading = String(rows[1]?.[1] || "").trim();
-
-      const milestones = {
-        gold: Number(rows[0]?.[5] || 40),
-        silver: Number(rows[1]?.[5] || 25),
-        bronze: Number(rows[2]?.[5] || 10),
-      };
-
       const headers = rows[3];
 
       const firstNameIndex = headers.indexOf("First Name");
@@ -290,12 +274,7 @@ app.get("/api/sheets", async (req, res) => {
         .filter((r) => r.name && r.visits > 0)
         .sort((a, b) => b.visits - a.visits);
 
-      return res.json({
-        heading,
-        subheading,
-        leaders: sorted,
-        milestones,
-      });
+      return res.json({ heading, subheading, leaders: sorted });
     }
 
     if (type === "routine") {
@@ -350,16 +329,16 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "quotes") {
-      const rows = await fetchSheetRange("Quotes!A:F");
+      const rows = await fetchSheetRange("Quotes!A:D");
 
-      if (rows.length < 2) return res.json([]);
+      if (rows.length < 2) {
+        return res.json([]);
+      }
 
       const headers = rows[0].map((h) => String(h || "").trim());
-
       const timestampIndex = headers.indexOf("Timestamp");
       const displayNameIndex = headers.indexOf("Display Name");
       const quoteIndex = headers.indexOf("Quote");
-      const statusIndex = headers.indexOf("Status");
 
       const quotes = rows
         .slice(1)
@@ -372,18 +351,10 @@ app.get("/api/sheets", async (req, res) => {
             timeMs,
             displayName: String(row[displayNameIndex] || "").trim(),
             quote: String(row[quoteIndex] || "").trim(),
-
-            // 🔴 SAFE STATUS HANDLING
-            status:
-              statusIndex !== -1 && row.length > statusIndex
-                ? String(row[statusIndex] || "")
-                    .trim()
-                    .toLowerCase()
-                : "approved",
           };
         })
         .filter((q) => q.quote)
-        .filter((q) => q.status === "approved") // 🔴 CRITICAL
+        .filter((q) => isMessageSafe(q.quote) && isMessageSafe(q.displayName))
         .filter((q) => !Number.isNaN(q.timeMs))
         .filter((q) => q.timeMs >= Date.now() - 120 * 60 * 1000)
         .sort((a, b) => b.timeMs - a.timeMs);
