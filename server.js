@@ -251,14 +251,30 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "leaderboard") {
-      const rows = await fetchSheetRange("Leaderboard!A:C");
+      const rows = await fetchSheetRange("Leaderboard!A:F");
 
       if (rows.length < 4) {
-        return res.json({ heading: "", subheading: "", leaders: [] });
+        return res.json({
+          heading: "",
+          subheading: "",
+          leaders: [],
+          milestones: {
+            gold: 40,
+            silver: 25,
+            bronze: 10,
+          },
+        });
       }
 
       const heading = String(rows[0]?.[1] || "").trim();
       const subheading = String(rows[1]?.[1] || "").trim();
+
+      const milestones = {
+        gold: Number(rows[0]?.[5] || 40),
+        silver: Number(rows[1]?.[5] || 25),
+        bronze: Number(rows[2]?.[5] || 10),
+      };
+
       const headers = rows[3];
 
       const firstNameIndex = headers.indexOf("First Name");
@@ -274,7 +290,12 @@ app.get("/api/sheets", async (req, res) => {
         .filter((r) => r.name && r.visits > 0)
         .sort((a, b) => b.visits - a.visits);
 
-      return res.json({ heading, subheading, leaders: sorted });
+      return res.json({
+        heading,
+        subheading,
+        leaders: sorted,
+        milestones,
+      });
     }
 
     if (type === "routine") {
