@@ -9,7 +9,7 @@ export default function ClassCard({ item }) {
   const statusText = isLive ? "Class in Progress" : "Next Class";
   const statusColor = isLive ? "" : "";
   const statusBg = isLive
-    ? "text-[#B01E00] bg-red-300/40"
+    ? "text-[#ed6145] bg-red-300/40"
     : "text-[#445A03] bg-green-300/40";
   const cardBg = isLive ? "bg-[#B01E00]/50 " : "bg-[#445A03]/50";
 

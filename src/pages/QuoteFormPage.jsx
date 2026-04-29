@@ -98,7 +98,7 @@ export default function QuoteFormPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-200 px-4 py-2 text-black">
       <div className="mb-4 flex items-center justify-between gap-4">
-        <img src={studioPlt} alt="Studio PLT" className="w-15" />
+        <img src={studioPlt} alt="Studio PLT" className="w-20" />
       </div>
 
       <div className="w-full max-w-xl space-y-2">
@@ -156,9 +156,9 @@ export default function QuoteFormPage() {
               />
 
               <div className="mt-2 flex items-center justify-between">
-                <div className="text-xs text-black/50">
+                {/* <div className="text-xs text-black/50">
                   Maximum {QUOTE_MAX_LENGTH} characters
-                </div>
+                </div> */}
 
                 <div
                   className={`text-sm font-medium ${
@@ -209,7 +209,7 @@ export default function QuoteFormPage() {
               {submitting ? "Submitting..." : "Submit"}
             </button>
             <div className="text-xs text-center text-black/50 -mt-1">
-              Your contact details can be used for future marketing purposes.
+              Submitted data maybe stored for an extended period for marketing purposes.
             </div>
 
             {/* MESSAGE */}
