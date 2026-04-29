@@ -208,6 +208,9 @@ export default function QuoteFormPage() {
             >
               {submitting ? "Submitting..." : "Submit"}
             </button>
+            <div className="text-xs text-center text-black/50 -mt-1">
+              Your contact details can be used for future marketing purposes.
+            </div>
 
             {/* MESSAGE */}
             {message && (
