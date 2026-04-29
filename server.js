@@ -37,6 +37,7 @@ const bannedWords = [
   "bitch",
   "bastard",
   "asshole",
+  "ashole",
   "cunt",
   "dick",
   "piss",
@@ -47,15 +48,19 @@ const bannedWords = [
 function normalizeText(text = "") {
   return String(text)
     .toLowerCase()
-    .replace(/[@]/g, "a")
+    .replace(/[@4]/g, "a")
     .replace(/[!1|]/g, "i")
     .replace(/[$5]/g, "s")
     .replace(/[0]/g, "o")
     .replace(/[^a-z0-9]/g, "");
 }
 
+function collapseRepeats(text = "") {
+  return text.replace(/(.)\1+/g, "$1");
+}
+
 function isMessageSafe(text = "") {
-  const cleanText = normalizeText(text);
+  const cleanText = collapseRepeats(normalizeText(text));
   return !bannedWords.some((word) => cleanText.includes(word));
 }
 
@@ -65,8 +70,8 @@ async function isAiMessageSafe(text = "") {
   if (!cleanText) return true;
 
   if (!openai) {
-    console.warn("OPENAI_API_KEY missing. Skipping AI moderation.");
-    return true;
+    console.warn("OPENAI_API_KEY missing. Holding for review.");
+    return "unknown";
   }
 
   try {
@@ -78,16 +83,57 @@ async function isAiMessageSafe(text = "") {
     return !moderation.results?.[0]?.flagged;
   } catch (error) {
     console.error("AI moderation failed:", error?.message || error);
+    return "unknown";
+  }
+}
 
-    // Important: avoid 500 error if OpenAI rate limits
-    if (
-      error?.status === 429 ||
-      error?.message?.includes("Too Many Requests")
-    ) {
-      return true;
+
+async function moderateMessage(text = "") {
+  if (!openai) return { status: "unknown", filtered: "" };
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
+You are a strict moderator for a public LED display.
+
+Step 1: Correct spelling and grammar.
+Step 2: Evaluate if the message is suitable.
+
+Allow ONLY:
+- positive
+- motivational
+- encouraging
+
+Reject anything negative, critical, inappropriate.
+
+Respond in JSON format ONLY:
+{
+  "status": "approved" OR "rejected",
+  "filtered": "corrected message"
+}
+          `,
+        },
+        { role: "user", content: text },
+      ],
+      temperature: 0,
+    });
+
+    const raw = response.choices[0].message.content.trim();
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      console.error("LLM JSON parse failed:", raw);
+      return { status: "unknown", filtered: "" };
     }
 
-    return true;
+  } catch (error) {
+    console.error("LLM failed:", error.message);
+    return { status: "unknown", filtered: "" };
   }
 }
 
@@ -127,6 +173,23 @@ const fetchSheetRange = async (range) => {
 
   return data.values || [];
 };
+
+function parseSheetDate(dateStr) {
+  if (!dateStr) return NaN;
+
+  const raw = String(dateStr).trim();
+
+  const normalDate = new Date(raw).getTime();
+  if (!Number.isNaN(normalDate)) return normalDate;
+
+  const parts = raw.split(/[\s/:]+/).map(Number);
+
+  if (parts.length < 5) return NaN;
+
+  const [day, month, year, hour, minute, second = 0] = parts;
+
+  return new Date(year, month - 1, day, hour, minute, second).getTime();
+}
 
 app.get("/server-login", (req, res) => {
   try {
@@ -350,31 +413,38 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "quotes") {
-      const rows = await fetchSheetRange("Quotes!A:D");
+      const rows = await fetchSheetRange("Quotes!A:G");
 
       if (rows.length < 2) {
         return res.json([]);
       }
 
       const headers = rows[0].map((h) => String(h || "").trim());
+
       const timestampIndex = headers.indexOf("Timestamp");
       const displayNameIndex = headers.indexOf("Display Name");
-      const quoteIndex = headers.indexOf("Quote");
+      const filteredIndex = headers.indexOf("Filtered Message");
+      const statusIndex = headers.indexOf("Status");
 
       const quotes = rows
         .slice(1)
         .map((row, index) => {
           const rawTime = String(row[timestampIndex] || "").trim();
-          const timeMs = new Date(rawTime).getTime();
+          const timeMs = parseSheetDate(rawTime);
 
           return {
             id: index + 1,
             timeMs,
             displayName: String(row[displayNameIndex] || "").trim(),
-            quote: String(row[quoteIndex] || "").trim(),
+            quote: String(row[filteredIndex] || "").trim(),
+            status:
+              statusIndex !== -1 && row.length > statusIndex
+                ? String(row[statusIndex] || "").trim().toLowerCase()
+                : "approved",
           };
         })
         .filter((q) => q.quote)
+        .filter((q) => q.status === "approved")
         .filter((q) => isMessageSafe(q.quote) && isMessageSafe(q.displayName))
         .filter((q) => !Number.isNaN(q.timeMs))
         .filter((q) => q.timeMs >= Date.now() - 120 * 60 * 1000)
@@ -401,13 +471,20 @@ app.post("/api/submit-quote", async (req, res) => {
     }
 
     const displayName = String(body.displayName || "").trim();
-    const phoneNumber = String(body.phoneNumber || "").trim();
+    const email = String(body.email || "").trim();
     const quote = String(body.quote || "").trim();
 
-    if (!displayName || !phoneNumber || !quote) {
+    if (!displayName || !email || !quote) {
       return res.status(400).json({
         success: false,
-        error: "Display name, phone number, and quote are required.",
+        error: "Display name, email, and quote are required.",
+      });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "Please enter a valid email address.",
       });
     }
 
@@ -420,13 +497,36 @@ app.post("/api/submit-quote", async (req, res) => {
 
     const aiNameSafe = await isAiMessageSafe(displayName);
     const aiQuoteSafe = await isAiMessageSafe(quote);
+    const llmResult = await moderateMessage(quote);
 
-    if (!aiNameSafe || !aiQuoteSafe) {
-      return res.status(400).json({
-        success: false,
-        error: "This message is against our policy.",
-      });
-    }
+const filteredQuote = llmResult.filtered;
+const llmStatus = llmResult.status;
+
+   let status = "approved";
+let reason = "";
+
+// Safety filter
+if (aiNameSafe === false || aiQuoteSafe === false) {
+  status = "rejected";
+  reason = "ai_rejected";
+}
+
+// AI failure
+if (aiNameSafe === "unknown" || aiQuoteSafe === "unknown") {
+  status = "pending";
+  reason = "ai_unknown";
+}
+
+// 🔴 LLM decision
+if (llmStatus === "rejected") {
+  status = "rejected";
+  reason = "llm_rejected";
+}
+
+if (llmStatus === "unknown") {
+  status = "pending";
+  reason = "llm_unknown";
+}
 
     if (!QUOTE_SCRIPT_URL) {
       return res.status(500).json({
@@ -441,10 +541,13 @@ app.post("/api/submit-quote", async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        displayName,
-        phoneNumber,
-        quote,
-      }),
+  displayName,
+  email,
+  originalMessage: quote,
+  filteredMessage: status === "approved" ? filteredQuote : "",
+  status,
+  reason,
+})
     });
 
     const text = await upstreamRes.text();
@@ -464,7 +567,24 @@ app.post("/api/submit-quote", async (req, res) => {
       });
     }
 
-    return res.json({ success: true });
+    if (status === "rejected") {
+      return res.status(400).json({
+        success: false,
+        error: "This message is against our policy.",
+      });
+    }
+
+    if (status === "pending") {
+      return res.json({
+        success: true,
+        message: "Your message has been submitted for review.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Thank you! Your message has been submitted.",
+    });
   } catch (error) {
     console.error("submit-quote error:", error);
 

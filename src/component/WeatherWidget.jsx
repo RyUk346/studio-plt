@@ -25,7 +25,11 @@ export default function WeatherWidget({
         <>
           <div className="flex">
             <div className="text-3xl leading-none max-[1750px]:text-6xl">
-              {icon}
+              <img
+                src={icon}
+                alt={label}
+                className="h-18 w-18 object-contain max-[1750px]:h-16 max-[1750px]:w-16"
+  />
             </div>
             <div>
               <div className="mt-1 text-2xl font-bold text-white max-[1750px]:text-xl">

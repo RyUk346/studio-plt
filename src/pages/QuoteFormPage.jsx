@@ -10,7 +10,7 @@ const NAME_MAX_LENGTH = 12;
 
 export default function QuoteFormPage() {
   const [displayName, setDisplayName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState(""); // ✅ changed
   const [quote, setQuote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -21,18 +21,38 @@ export default function QuoteFormPage() {
   const isAtLimit = remainingChars <= 0;
 
   const previewName = displayName.trim() || "Your Name";
-  const previewQuote = quote.trim() || "Your message preview will appear here";
+  const previewQuote =
+    quote.trim() || "Your message preview will appear here";
+
+  // ✅ email validation
+  const isValidEmail = (value = "") =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const cleanName = displayName.trim();
-    const cleanPhone = phoneNumber.trim();
+    const cleanEmail = email.trim(); // ✅ changed
     const cleanQuote = quote.trim();
 
+    // ✅ moderation check
     if (!isMessageSafe(cleanName) || !isMessageSafe(cleanQuote)) {
       setIsError(true);
       setMessage("Please avoid inappropriate language.");
+      return;
+    }
+
+    // ✅ required validation
+    if (!cleanName || !cleanEmail || !cleanQuote) {
+      setIsError(true);
+      setMessage("Name, email, and message are required.");
+      return;
+    }
+
+    // ✅ email format validation
+    if (!isValidEmail(cleanEmail)) {
+      setIsError(true);
+      setMessage("Please enter a valid email address.");
       return;
     }
 
@@ -46,7 +66,7 @@ export default function QuoteFormPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           displayName: cleanName,
-          phoneNumber: cleanPhone,
+          email: cleanEmail, // ✅ changed
           quote: cleanQuote,
         }),
       });
@@ -62,8 +82,10 @@ export default function QuoteFormPage() {
 
       setIsError(false);
       setMessage("Thank you! Your message has been submitted.");
+
+      // ✅ reset
       setDisplayName("");
-      setPhoneNumber("");
+      setEmail("");
       setQuote("");
     } catch (error) {
       setIsError(true);
@@ -84,9 +106,12 @@ export default function QuoteFormPage() {
           onSubmit={handleSubmit}
           className="w-full rounded-3xl border border-black/10 bg-gray-300 p-4"
         >
-          <h1 className="text-center text-2xl font-bold">Share a Message</h1>
+          <h1 className="text-center text-2xl font-bold">
+            Share a Message
+          </h1>
 
           <div className="mt-6 space-y-4">
+            {/* NAME */}
             <input
               type="text"
               placeholder="Display Name"
@@ -96,17 +121,18 @@ export default function QuoteFormPage() {
                 setMessage("");
                 setIsError(false);
               }}
-              maxLength={12}
+              maxLength={NAME_MAX_LENGTH}
               className="w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-black outline-none"
               required
             />
 
+            {/* EMAIL (REPLACED PHONE) */}
             <input
-              type="tel"
-              placeholder="Phone Number"
-              value={phoneNumber}
+              type="email"
+              placeholder="Email Address"
+              value={email}
               onChange={(e) => {
-                setPhoneNumber(e.target.value.replace(/\D/g, ""));
+                setEmail(e.target.value);
                 setMessage("");
                 setIsError(false);
               }}
@@ -114,6 +140,7 @@ export default function QuoteFormPage() {
               required
             />
 
+            {/* MESSAGE */}
             <div>
               <textarea
                 placeholder="Write your message"
@@ -138,8 +165,8 @@ export default function QuoteFormPage() {
                     isAtLimit
                       ? "text-red-500"
                       : isNearLimit
-                        ? "text-yellow-500"
-                        : "text-black/60"
+                      ? "text-yellow-500"
+                      : "text-black/60"
                   }`}
                 >
                   {quote.length}/{QUOTE_MAX_LENGTH}
@@ -147,6 +174,7 @@ export default function QuoteFormPage() {
               </div>
             </div>
 
+            {/* PREVIEW */}
             <div>
               <div className="mb-0.5 pl-1.5 text-sm font-bold">
                 Live Preview :
@@ -154,10 +182,10 @@ export default function QuoteFormPage() {
 
               <div className="rounded-lg bg-black/25 backdrop-blur-md">
                 <div className="flex items-stretch py-1.5">
-                  <div className="flex flex-1 items-center justify-center overflow-hidden text-center">
+                  <div className="flex flex-1 items-center justify-center text-center">
                     <div>
                       <div
-                        className={`text-[14px] font-medium leading-relaxed ${
+                        className={`text-[14px] font-medium ${
                           quote.trim() ? "text-white" : "text-white/50"
                         }`}
                       >
@@ -172,14 +200,16 @@ export default function QuoteFormPage() {
               </div>
             </div>
 
+            {/* SUBMIT */}
             <button
               type="submit"
               disabled={submitting || !quote.trim()}
-              className="w-full rounded-xl bg-black px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-60"
             >
               {submitting ? "Submitting..." : "Submit"}
             </button>
 
+            {/* MESSAGE */}
             {message && (
               <div
                 className={`rounded-lg px-3 py-2 text-center text-sm font-medium ${
@@ -194,8 +224,8 @@ export default function QuoteFormPage() {
           </div>
         </form>
 
-        <div className="mt-6 flex w-full flex-col items-center justify-start">
-          <h2 className="font-sans text-xs text-[#48525C]">Powered By</h2>
+        <div className="mt-6 flex w-full flex-col items-center">
+          <h2 className="text-xs text-[#48525C]">Powered By</h2>
           <a href="https://hyperglow.co.uk/">
             <img src={HGlogo} alt="Hyperglow" className="w-40" />
           </a>

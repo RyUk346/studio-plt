@@ -1,15 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 9;
 const SLIDE_INTERVAL_MS = 10000;
 
+function capitalize(word = "") {
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
 function formatMemberName(name = "") {
-  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  const parts = String(name)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 
   if (parts.length === 0) return "";
-  if (parts.length === 1) return parts[0];
 
-  const firstName = parts[0];
+  if (parts.length === 1) {
+    return capitalize(parts[0]);
+  }
+
+  const firstName = capitalize(parts[0]);
   const lastInitial = parts[parts.length - 1][0]?.toUpperCase() || "";
 
   return `${firstName} ${lastInitial}`;
@@ -50,10 +60,8 @@ function getTier(visits = 0, milestones = {}) {
   }
 
   return {
-    label: `${count}`,
-    cardBg: "border-white/20",
-    badgeBg: "text-[#C0C0C0] border border-white/10",
-    textColor: "text-[#C0C0C0]",
+    
+    
   };
 }
 
@@ -61,12 +69,19 @@ export default function SlidingLeaderboard({ leaders, milestones }) {
   const pages = useMemo(() => {
     const chunks = [];
 
-    for (let i = 0; i < leaders.length; i += ITEMS_PER_PAGE) {
-      chunks.push(leaders.slice(i, i + ITEMS_PER_PAGE));
-    }
+    const bronze = Number(milestones?.bronze || 10);
+
+const clubMembers = leaders.filter((item) => {
+  const visits = Number(item.visits || 0);
+  return visits >= bronze;
+});
+
+for (let i = 0; i < clubMembers.length; i += ITEMS_PER_PAGE) {
+  chunks.push(clubMembers.slice(i, i + ITEMS_PER_PAGE));
+}
 
     return chunks;
-  }, [leaders]);
+  }, [leaders, milestones]);
 
   const [pageIndex, setPageIndex] = useState(0);
   const [animateCards, setAnimateCards] = useState(true);
@@ -97,7 +112,7 @@ export default function SlidingLeaderboard({ leaders, milestones }) {
   }, [pageIndex]);
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div className="relative h-full  mt-1 overflow-hidden">
       <div
         className="h-full transition-transform duration-700 ease-in-out"
         style={{ transform: `translateY(-${pageIndex * 100}%)` }}
@@ -111,7 +126,7 @@ export default function SlidingLeaderboard({ leaders, milestones }) {
               return (
                 <div
                   key={`${item.name}-${item.visits}`}
-                  className={`rounded-2xl border px-4 py-4 backdrop-blur-md transition-all duration-700 ease-out max-[1750px]:py-2 ${tier.cardBg} ${
+                  className={`rounded-2xl flex flex-col justify-center border px-4 py-4 backdrop-blur-md transition-all duration-700 ease-out max-[1750px]:py-2 ${tier.cardBg} ${
                     isActivePage && animateCards
                       ? "translate-x-0 opacity-100"
                       : "-translate-x-16 opacity-0"
@@ -131,7 +146,7 @@ export default function SlidingLeaderboard({ leaders, milestones }) {
                     </div>
 
                     <div
-                      className={`rounded-full px-3 py-1 text-lg max-[1750px]:text-xs ${tier.badgeBg}`}
+                      className={`rounded-full px-3 py-0.5 text-lg max-[1750px]:text-xs ${tier.badgeBg}`}
                     >
                       {tier.label}
                     </div>

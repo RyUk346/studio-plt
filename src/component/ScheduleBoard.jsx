@@ -79,17 +79,17 @@ export default function ScheduleBoard() {
   return (
     <div className="h-screen w-screen overflow-hidden p-2 text-white">
       <div className="grid h-full grid-cols-12 gap-2">
-        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-lg bg-black/30 p-6 backdrop-blur-md max-[1750px]:p-4">
+        <div className="col-span-2 flex h-full flex-col overflow-hidden rounded-lg bg-black/30 p-6 backdrop-blur-md max-[1750px]:px-4 py-2">
           <div className="border-b border-white/50 pb-4 max-[1750px]:pb-2">
             <h2 className="text-4xl font-bold tracking-wide max-[1750px]:text-2xl">
-              {leaderboardHeading || "Leaderboard"}
+              {leaderboardHeading}
             </h2>
             <p className="mt-1 text-lg text-white/60 max-[1750px]:text-sm">
-              {leaderboardSubheading || "Member milestones"}
+              {leaderboardSubheading}
             </p>
           </div>
 
-          <div className="mt-6 flex-1 overflow-hidden max-[1750px]:mt-4">
+          <div className="mt-6 flex-1 overflow-hidden max-[1750px]:mt-3">
             {leaderLoading ? (
               <div className="text-white/70">Loading leaderboard...</div>
             ) : leaderError ? (
