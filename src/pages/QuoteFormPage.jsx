@@ -204,7 +204,7 @@ export default function QuoteFormPage() {
             <div className="rounded-xl border border-black/10 bg-white/60 p-3 text-xs leading-relaxed text-black/70">
               We store your name, email, and message to provide this service.
               Data may be used for moderation, display, analytics, and, with
-              consent, marketing and system improvement. See our Privacy Policy.
+              consent, marketing and system improvement. See our <a className="text-blue-600" href="https://hyperglow.co.uk/privacy-policy/">Privacy Policy.</a>
 
               <label className="mt-3 flex items-start gap-2">
                 <input
