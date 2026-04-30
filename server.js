@@ -413,7 +413,7 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "quotes") {
-      const rows = await fetchSheetRange("Quotes!A:G");
+      const rows = await fetchSheetRange("Quotes!A:I");
 
       if (rows.length < 2) {
         return res.json([]);
@@ -473,6 +473,16 @@ app.post("/api/submit-quote", async (req, res) => {
     const displayName = String(body.displayName || "").trim();
     const email = String(body.email || "").trim();
     const quote = String(body.quote || "").trim();
+    const publicDisplayConsent = Boolean(body.publicDisplayConsent);
+    const marketingConsent = Boolean(body.marketingConsent);
+
+    // 🔴 REQUIRED CONSENT CHECK
+    if (!publicDisplayConsent) {
+      return res.status(400).json({
+        success: false,
+        error: "Public display consent is required.",
+      });
+    }
 
     if (!displayName || !email || !quote) {
       return res.status(400).json({
@@ -499,34 +509,34 @@ app.post("/api/submit-quote", async (req, res) => {
     const aiQuoteSafe = await isAiMessageSafe(quote);
     const llmResult = await moderateMessage(quote);
 
-const filteredQuote = llmResult.filtered;
-const llmStatus = llmResult.status;
+    const filteredQuote = llmResult.filtered;
+    const llmStatus = llmResult.status;
 
-   let status = "approved";
-let reason = "";
+    let status = "approved";
+    let reason = "";
 
 // Safety filter
-if (aiNameSafe === false || aiQuoteSafe === false) {
-  status = "rejected";
-  reason = "ai_rejected";
-}
+    if (aiNameSafe === false || aiQuoteSafe === false) {
+      status = "rejected";
+      reason = "ai_rejected";
+    }
 
 // AI failure
-if (aiNameSafe === "unknown" || aiQuoteSafe === "unknown") {
-  status = "pending";
-  reason = "ai_unknown";
-}
+    if (aiNameSafe === "unknown" || aiQuoteSafe === "unknown") {
+      status = "pending";
+      reason = "ai_unknown";
+    }
 
-// 🔴 LLM decision
-if (llmStatus === "rejected") {
-  status = "rejected";
-  reason = "llm_rejected";
-}
+    // 🔴 LLM decision
+    if (llmStatus === "rejected") {
+      status = "rejected";
+      reason = "llm_rejected";
+    }
 
-if (llmStatus === "unknown") {
-  status = "pending";
-  reason = "llm_unknown";
-}
+    if (llmStatus === "unknown") {
+      status = "pending";
+      reason = "llm_unknown";
+    }
 
     if (!QUOTE_SCRIPT_URL) {
       return res.status(500).json({
@@ -540,14 +550,15 @@ if (llmStatus === "unknown") {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-  displayName,
-  email,
-  originalMessage: quote,
-  filteredMessage: status === "approved" ? filteredQuote : "",
-  status,
-  reason,
-})
+        body: JSON.stringify({
+        displayName,
+        email,
+        originalMessage: quote,
+        filteredMessage: status === "approved" ? filteredQuote : "",
+        status,
+        reason,
+        marketingConsent,
+      })
     });
 
     const text = await upstreamRes.text();

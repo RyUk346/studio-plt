@@ -10,8 +10,10 @@ const NAME_MAX_LENGTH = 12;
 
 export default function QuoteFormPage() {
   const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState(""); // ✅ changed
+  const [email, setEmail] = useState("");
   const [quote, setQuote] = useState("");
+  const [publicDisplayConsent, setPublicDisplayConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -21,10 +23,8 @@ export default function QuoteFormPage() {
   const isAtLimit = remainingChars <= 0;
 
   const previewName = displayName.trim() || "Your Name";
-  const previewQuote =
-    quote.trim() || "Your message preview will appear here";
+  const previewQuote = quote.trim() || "Your message preview will appear here";
 
-  // ✅ email validation
   const isValidEmail = (value = "") =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -32,24 +32,27 @@ export default function QuoteFormPage() {
     e.preventDefault();
 
     const cleanName = displayName.trim();
-    const cleanEmail = email.trim(); // ✅ changed
+    const cleanEmail = email.trim();
     const cleanQuote = quote.trim();
 
-    // ✅ moderation check
+    if (!publicDisplayConsent) {
+      setIsError(true);
+      setMessage("Please confirm that your message may be reviewed, moderated, and displayed publicly.");
+      return;
+    }
+
     if (!isMessageSafe(cleanName) || !isMessageSafe(cleanQuote)) {
       setIsError(true);
       setMessage("Please avoid inappropriate language.");
       return;
     }
 
-    // ✅ required validation
     if (!cleanName || !cleanEmail || !cleanQuote) {
       setIsError(true);
       setMessage("Name, email, and message are required.");
       return;
     }
 
-    // ✅ email format validation
     if (!isValidEmail(cleanEmail)) {
       setIsError(true);
       setMessage("Please enter a valid email address.");
@@ -66,8 +69,10 @@ export default function QuoteFormPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           displayName: cleanName,
-          email: cleanEmail, // ✅ changed
+          email: cleanEmail,
           quote: cleanQuote,
+          publicDisplayConsent,
+          marketingConsent,
         }),
       });
 
@@ -83,10 +88,11 @@ export default function QuoteFormPage() {
       setIsError(false);
       setMessage("Thank you! Your message has been submitted.");
 
-      // ✅ reset
       setDisplayName("");
       setEmail("");
       setQuote("");
+      setPublicDisplayConsent(false);
+      setMarketingConsent(false);
     } catch (error) {
       setIsError(true);
       setMessage(error.message || "Something went wrong.");
@@ -94,6 +100,9 @@ export default function QuoteFormPage() {
       setSubmitting(false);
     }
   };
+
+  const submitDisabled =
+    submitting || !quote.trim() || !publicDisplayConsent;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-200 px-4 py-2 text-black">
@@ -111,7 +120,6 @@ export default function QuoteFormPage() {
           </h1>
 
           <div className="mt-6 space-y-4">
-            {/* NAME */}
             <input
               type="text"
               placeholder="Display Name"
@@ -126,7 +134,6 @@ export default function QuoteFormPage() {
               required
             />
 
-            {/* EMAIL (REPLACED PHONE) */}
             <input
               type="email"
               placeholder="Email Address"
@@ -140,7 +147,6 @@ export default function QuoteFormPage() {
               required
             />
 
-            {/* MESSAGE */}
             <div>
               <textarea
                 placeholder="Write your message"
@@ -155,11 +161,7 @@ export default function QuoteFormPage() {
                 required
               />
 
-              <div className="mt-2 flex items-center justify-between">
-                {/* <div className="text-xs text-black/50">
-                  Maximum {QUOTE_MAX_LENGTH} characters
-                </div> */}
-
+              <div className="mt-2 flex items-center justify-end">
                 <div
                   className={`text-sm font-medium ${
                     isAtLimit
@@ -174,7 +176,6 @@ export default function QuoteFormPage() {
               </div>
             </div>
 
-            {/* PREVIEW */}
             <div>
               <div className="mb-0.5 pl-1.5 text-sm font-bold">
                 Live Preview :
@@ -200,19 +201,50 @@ export default function QuoteFormPage() {
               </div>
             </div>
 
-            {/* SUBMIT */}
+            <div className="rounded-xl border border-black/10 bg-white/60 p-3 text-xs leading-relaxed text-black/70">
+              We store your name, email, and message to provide this service.
+              Data may be used for moderation, display, analytics, and, with
+              consent, marketing and system improvement. See our Privacy Policy.
+
+              <label className="mt-3 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={publicDisplayConsent}
+                  onChange={(e) => {
+                    setPublicDisplayConsent(e.target.checked);
+                    setMessage("");
+                    setIsError(false);
+                  }}
+                  className="mt-0.5"
+                />
+                <span>
+                  I agree that my message may be reviewed, moderated, and
+                  displayed publicly.
+                </span>
+              </label>
+
+              <label className="mt-2 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={marketingConsent}
+                  onChange={(e) => setMarketingConsent(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  I agree to receive marketing communications and allow my
+                  submission to be used to improve moderation systems.
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={submitting || !quote.trim()}
-              className="w-full rounded-xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-60"
+              disabled={submitDisabled}
+              className="w-full rounded-xl bg-black px-4 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Submitting..." : "Submit"}
             </button>
-            <div className="text-xs text-center text-black/50 -mt-1">
-              Submitted data maybe stored for an extended period for marketing purposes.
-            </div>
 
-            {/* MESSAGE */}
             {message && (
               <div
                 className={`rounded-lg px-3 py-2 text-center text-sm font-medium ${
