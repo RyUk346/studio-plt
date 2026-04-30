@@ -30,7 +30,7 @@ function getWeatherMeta(code, temp, isDay) {
 
   if (code === 0) {
     if (isDay) {
-      return { icon: sunnyDay, label: temperature >= 30 ? "Sunny" : "Clear" };
+      return { icon: sunnyDay, label: temperature >= 15 ? "Sunny" : "Clear" };
     }
 
     return { icon: clearNight, label: "Clear" };

@@ -12,6 +12,7 @@
   "dependencies": {
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.4.1",
     "openai": "^6.34.0",
@@ -22,7 +23,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "@netlify/vite-plugin": "^2.11.2",
     "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

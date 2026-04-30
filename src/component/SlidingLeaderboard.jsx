@@ -60,9 +60,11 @@ function getTier(visits = 0, milestones = {}) {
   }
 
   return {
-    
-    
-  };
+    label: `${bronze}+ Club`,
+    cardBg: "border-white/20 bg-[#CD7F3214]",
+    badgeBg: "bg-[#CD7F3240] text-orange-300 border border-orange-400/30",
+    textColor: "text-[#CD7F32]",
+};
 }
 
 export default function SlidingLeaderboard({ leaders, milestones }) {
@@ -129,7 +131,7 @@ for (let i = 0; i < clubMembers.length; i += ITEMS_PER_PAGE) {
                   className={`rounded-2xl flex flex-col justify-center border px-4 py-4 backdrop-blur-md transition-all duration-700 ease-out max-[1750px]:py-2 ${tier.cardBg} ${
                     isActivePage && animateCards
                       ? "translate-x-0 opacity-100"
-                      : "-translate-x-16 opacity-0"
+                      : "-translate-x-10 opacity-0"
                   }`}
                   style={{
                     transitionDelay:

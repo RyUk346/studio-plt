@@ -62,7 +62,7 @@ export default function useRoutine() {
     };
 
     fetchRoutine();
-    const interval = setInterval(fetchRoutine, 10000);
+    const interval = setInterval(fetchRoutine, 60 * 10000);
     return () => clearInterval(interval);
   }, []);
 
