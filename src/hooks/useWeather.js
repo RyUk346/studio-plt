@@ -15,8 +15,7 @@ import fallback from "../assets/weather/default.png";
 const lat = import.meta.env.VITE_WEATHER_LAT;
 const lon = import.meta.env.VITE_WEATHER_LON;
 
-const WEATHER_API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=sunrise,sunset&timezone=auto`;
-
+const WEATHER_API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min&timezone=auto`;
 function isDayTime(sunrise, sunset) {
   const now = new Date();
   const sunriseTime = new Date(sunrise);
@@ -71,14 +70,16 @@ function getWeatherMeta(code, temp, isDay) {
 }
 
 export default function useWeather() {
-  const [weather, setWeather] = useState({
-    temperature: null,
-    icon: fallback,
-    label: "Loading",
-    loading: true,
-    error: "",
-    isDay: true,
-  });
+ const [weather, setWeather] = useState({
+  temperature: null,
+  maxTemperature: null,
+  minTemperature: null,
+  icon: fallback,
+  label: "Loading",
+  loading: true,
+  error: "",
+  isDay: true,
+});
 
   useEffect(() => {
     let isMounted = true;
@@ -95,13 +96,17 @@ export default function useWeather() {
         const current = data?.current;
         const sunrise = data?.daily?.sunrise?.[0];
         const sunset = data?.daily?.sunset?.[0];
+        const maxTemperature = data?.daily?.temperature_2m_max?.[0];
+        const minTemperature = data?.daily?.temperature_2m_min?.[0];
 
         if (
           !current ||
           current.temperature_2m == null ||
           current.weather_code == null ||
           !sunrise ||
-          !sunset
+          !sunset ||
+          maxTemperature == null ||
+          minTemperature == null
         ) {
           throw new Error("Incomplete weather data");
         }
@@ -116,13 +121,15 @@ export default function useWeather() {
 
         if (isMounted) {
           setWeather({
-            temperature: Math.round(current.temperature_2m),
-            icon: meta.icon,
-            label: meta.label,
-            loading: false,
-            error: "",
-            isDay,
-          });
+          temperature: Math.round(current.temperature_2m),
+          maxTemperature: Math.round(maxTemperature),
+          minTemperature: Math.round(minTemperature),
+          icon: meta.icon,
+          label: meta.label,
+          loading: false,
+          error: "",
+          isDay,
+        });
         }
       } catch (error) {
         if (isMounted) {

@@ -119,6 +119,8 @@ export default function ScheduleBoard() {
 
               <WeatherWidget
                 temperature={weather.temperature}
+                maxTemperature={weather.maxTemperature}
+                minTemperature={weather.minTemperature}
                 icon={weather.icon}
                 label={weather.label}
                 loading={weather.loading}

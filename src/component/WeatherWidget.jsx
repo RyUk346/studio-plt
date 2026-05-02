@@ -1,5 +1,7 @@
 export default function WeatherWidget({
   temperature,
+  maxTemperature,
+  minTemperature,
   icon,
   label,
   loading,
@@ -23,20 +25,27 @@ export default function WeatherWidget({
         </>
       ) : (
         <>
-          <div className="flex">
-            <div className="text-3xl leading-none max-[1750px]:text-6xl">
-              <img
-                src={icon}
-                alt={label}
-                className="h-18 w-18 object-contain max-[1750px]:h-16 max-[1750px]:w-16"
-  />
-            </div>
+          <div className="flex items-center gap-2">
             <div>
+              <img
+              src={icon}
+              alt={label}
+              className="h-18 w-18 object-contain -mt-3 max-[1750px]:h-16 max-[1750px]:w-16"
+            />
+            <div className="text-sm text-white/60 -mt-2.5 max-[1750px]:text-sm">
+                {label}
+              </div>
+            </div>
+
+            <div className="text-left">
               <div className="mt-1 text-2xl font-bold text-white max-[1750px]:text-xl">
                 {temperature}°C
               </div>
-              <div className="text-sm text-white/60 max-[1750px]:text-sm">
-                {label}
+
+              
+
+              <div className="mt-1 text-sm font-semibold text-white/70">
+                {maxTemperature}°/{minTemperature}°
               </div>
             </div>
           </div>
