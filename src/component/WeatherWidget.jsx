@@ -32,22 +32,24 @@ export default function WeatherWidget({
               alt={label}
               className="h-18 w-18 object-contain -mt-3 max-[1750px]:h-16 max-[1750px]:w-16"
             />
-            <div className="text-sm text-white/60 -mt-2.5 max-[1750px]:text-sm">
-                {label}
-              </div>
+            
             </div>
 
-            <div className="text-left">
-              <div className="mt-1 text-2xl font-bold text-white max-[1750px]:text-xl">
+            <div className="">
+              <div className="mt-1 text-3xl font-bold text-white text-left">
                 {temperature}°C
               </div>
 
               
 
-              <div className="mt-1 text-sm font-semibold text-white/70">
+              
+            </div>
+            <div className="mt-1 text-sm font-semibold text-left text-white/70 text-right pl-3">
+              <div className="text-sm text-white/60 -mt-2.5 max-[1750px]:text-sm">
+                {label}
+              </div>
                 {maxTemperature}°/{minTemperature}°
               </div>
-            </div>
           </div>
         </>
       )}
