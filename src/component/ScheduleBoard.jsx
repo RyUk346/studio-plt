@@ -84,7 +84,7 @@ export default function ScheduleBoard() {
             <h2 className="text-4xl font-bold tracking-wide max-[1750px]:text-2xl">
               {leaderboardHeading}
             </h2>
-            <p className="mt-1 text-lg text-white/60 max-[1750px]:text-sm">
+            <p className="mt-1 text-lg text-white/60 font-semibold max-[1750px]:text-sm">
               {leaderboardSubheading}
             </p>
           </div>
@@ -128,8 +128,8 @@ export default function ScheduleBoard() {
               />
 
               <div className="ml-2 flex h-full min-w-[100px] flex-col items-end justify-center overflow-hidden rounded-lg border border-white/10 bg-black/10 px-6 py-4 text-right max-[1750px]:px-4">
-                <div className="text-sm text-white/60">{currentDate}</div>
-                <div className="mt-2 text-3xl font-bold tabular-nums text-white max-[1750px]:text-xl">
+                <div className="text-sm font-semibold text-white/60">{currentDate}</div>
+                <div className=" text-3xl font-bold tabular-nums text-white max-[1750px]:text-xl">
                   {currentTime}
                 </div>
               </div>

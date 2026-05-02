@@ -45,7 +45,7 @@ export default function WeatherWidget({
               
             </div>
             <div className="mt-1 text-sm font-semibold text-left text-white/70 text-right pl-3">
-              <div className="text-sm text-white/60 -mt-2.5 max-[1750px]:text-sm">
+              <div className="text-white/60 ">
                 {label}
               </div>
                 {maxTemperature}°/{minTemperature}°
