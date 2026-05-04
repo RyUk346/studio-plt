@@ -19,7 +19,8 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const QUOTE_SCRIPT_URL = process.env.QUOTE_SCRIPT_URL;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-const SHEET_ID = "1j_ya2A8-hyTsR53BZh-pj9jp1163t6tGA2fBjDXmCaM";
+const BRANCH_SHEET_ID = process.env.BRANCH_SHEET_ID;
+const QUOTE_SHEET_ID = process.env.QUOTE_SHEET_ID;
 
 const SCREEN_LOGIN_TOKEN = process.env.SCREEN_LOGIN_TOKEN;
 const AUTH_COOKIE_SECRET = process.env.AUTH_COOKIE_SECRET;
@@ -87,7 +88,6 @@ async function isAiMessageSafe(text = "") {
   }
 }
 
-
 async function moderateMessage(text = "") {
   if (!openai) return { status: "unknown", filtered: "" };
 
@@ -130,7 +130,6 @@ Respond in JSON format ONLY:
       console.error("LLM JSON parse failed:", raw);
       return { status: "unknown", filtered: "" };
     }
-
   } catch (error) {
     console.error("LLM failed:", error.message);
     return { status: "unknown", filtered: "" };
@@ -159,8 +158,8 @@ function verifyCookie(cookieValue) {
   return payload === "authorized" && signature === sign(payload);
 }
 
-const fetchSheetRange = async (range) => {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(
+const fetchSheetRange = async (sheetId, range) => {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(
     range,
   )}?key=${GOOGLE_API_KEY}`;
 
@@ -314,7 +313,7 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "leaderboard") {
-      const rows = await fetchSheetRange("Leaderboard!A:F");
+      const rows = await fetchSheetRange(BRANCH_SHEET_ID, "Leaderboard!A:F");
 
       if (rows.length < 4) {
         return res.json({
@@ -362,8 +361,7 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "routine") {
-      const rows = await fetchSheetRange("Class Routine!A:E");
-
+      const rows = await fetchSheetRange(BRANCH_SHEET_ID, "Class Routine!A:E");
       if (rows.length < 2) {
         return res.json([]);
       }
@@ -413,7 +411,7 @@ app.get("/api/sheets", async (req, res) => {
     }
 
     if (type === "quotes") {
-      const rows = await fetchSheetRange("Quotes!A:I");
+      const rows = await fetchSheetRange(QUOTE_SHEET_ID, "Quotes!A:H");
 
       if (rows.length < 2) {
         return res.json([]);
@@ -439,7 +437,9 @@ app.get("/api/sheets", async (req, res) => {
             quote: String(row[filteredIndex] || "").trim(),
             status:
               statusIndex !== -1 && row.length > statusIndex
-                ? String(row[statusIndex] || "").trim().toLowerCase()
+                ? String(row[statusIndex] || "")
+                    .trim()
+                    .toLowerCase()
                 : "approved",
           };
         })
@@ -449,7 +449,7 @@ app.get("/api/sheets", async (req, res) => {
         .filter((q) => !Number.isNaN(q.timeMs))
         .filter((q) => q.timeMs >= Date.now() - 120 * 60 * 1000)
         .sort((a, b) => b.timeMs - a.timeMs);
-
+      console.log("Fetched quotes:", quotes);
       return res.json(quotes);
     }
 
@@ -515,13 +515,13 @@ app.post("/api/submit-quote", async (req, res) => {
     let status = "approved";
     let reason = "";
 
-// Safety filter
+    // Safety filter
     if (aiNameSafe === false || aiQuoteSafe === false) {
       status = "rejected";
       reason = "ai_rejected";
     }
 
-// AI failure
+    // AI failure
     if (aiNameSafe === "unknown" || aiQuoteSafe === "unknown") {
       status = "pending";
       reason = "ai_unknown";
@@ -550,7 +550,7 @@ app.post("/api/submit-quote", async (req, res) => {
       headers: {
         "Content-Type": "application/json",
       },
-        body: JSON.stringify({
+      body: JSON.stringify({
         displayName,
         email,
         originalMessage: quote,
@@ -558,7 +558,7 @@ app.post("/api/submit-quote", async (req, res) => {
         status,
         reason,
         marketingConsent,
-      })
+      }),
     });
 
     const text = await upstreamRes.text();
