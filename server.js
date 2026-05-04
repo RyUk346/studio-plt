@@ -447,7 +447,7 @@ app.get("/api/sheets", async (req, res) => {
         .filter((q) => q.status === "approved")
         .filter((q) => isMessageSafe(q.quote) && isMessageSafe(q.displayName))
         .filter((q) => !Number.isNaN(q.timeMs))
-        .filter((q) => q.timeMs >= Date.now() - 120 * 60 * 1000)
+        .filter((q) => q.timeMs >= Date.now() - 60 * 60 * 1000)
         .sort((a, b) => b.timeMs - a.timeMs);
       console.log("Fetched quotes:", quotes);
       return res.json(quotes);
