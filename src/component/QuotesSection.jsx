@@ -69,8 +69,8 @@ export default function QuotesSection({ quotes = [] }) {
 
   const submitUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/StudioPLT/PLT-OP-LP/Message`
-      : "/StudioPLT/PLT-OP-LP/Message";
+      ? `${window.location.origin}/studio-plt/Message`
+      : "/studio-plt/Message";
 
   const shouldShowPrompt = showQrPrompt || !currentQuote;
 
@@ -80,9 +80,10 @@ export default function QuotesSection({ quotes = [] }) {
         <div className="flex h-full flex-1 items-center justify-center overflow-hidden rounded-lg bg-black/30 px-8 py-4 text-center backdrop-blur-md">
           {shouldShowPrompt ? (
             <div>
-               <div className="max-[1750px]:text-lg text-2xl font-medium text-white/70">
-              Scan QR Code to Share a Motivational Message with your Pilates Community
-            </div>
+              <div className="max-[1750px]:text-lg text-2xl font-medium text-white/70">
+                Scan QR Code to Share a Motivational Message with your Pilates
+                Community
+              </div>
             </div>
           ) : (
             <div>
