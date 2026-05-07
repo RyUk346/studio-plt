@@ -4,7 +4,6 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: "/StudioPLT",
   server: {
     proxy: {
       "/api": "http://localhost:3000",
