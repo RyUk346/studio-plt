@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
 import QuoteFormPage from "./pages/QuoteFormPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
@@ -7,7 +6,8 @@ import ScheduleBoard from "./component/ScheduleBoard";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    // 👈 Add the basename here
+    <BrowserRouter basename="/StudioPLT">
       <Routes>
         <Route path="/StudioPLT/PLT-OP-LP/Layer1" element={<ScheduleBoard />} />
         <Route
