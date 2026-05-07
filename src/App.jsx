@@ -7,7 +7,7 @@ import ScheduleBoard from "./component/ScheduleBoard";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/StudioPLT">
       <Routes>
         <Route path="/StudioPLT/PLT-OP-LP/Layer1" element={<ScheduleBoard />} />
         <Route
