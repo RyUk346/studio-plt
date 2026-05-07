@@ -26,9 +26,17 @@ const SCREEN_LOGIN_TOKEN = process.env.SCREEN_LOGIN_TOKEN;
 const AUTH_COOKIE_SECRET = process.env.AUTH_COOKIE_SECRET;
 const AUTH_COOKIE_NAME = "hg_screen_auth";
 
-const MAIN_PATH = "/StudioPLT/PLT-OP-LP/Layer1";
-const MESSAGE_PATH = "/StudioPLT/PLT-OP-LP/Message";
-const LOGIN_PATH = "/StudioPLT/PLT-OP-LP/Login";
+const URL_PREFIX = process.env.URL_PREFIX || "/studio-plt";
+
+// EXTERNAL paths (browser-visible, used in redirects & HTML)
+const MAIN_PATH = `${URL_PREFIX}/Layer1`;
+const MESSAGE_PATH = `${URL_PREFIX}/Message`;
+const LOGIN_PATH = `${URL_PREFIX}/Login`;
+
+// INTERNAL paths (used to match req.path — Nginx strips the prefix before forwarding)
+const ROUTE_MAIN = "/Layer1";
+const ROUTE_MESSAGE = "/Message";
+const ROUTE_LOGIN = "/Login";
 
 const openai = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
 
@@ -278,13 +286,13 @@ app.use((req, res, next) => {
   const requestPath = req.path;
 
   const isMainPath =
-    requestPath === MAIN_PATH || requestPath.startsWith(`${MAIN_PATH}/`);
+    requestPath === ROUTE_MAIN || requestPath.startsWith(`${ROUTE_MAIN}/`);
 
   const isPublicPath =
-    requestPath === MESSAGE_PATH ||
-    requestPath.startsWith(`${MESSAGE_PATH}/`) ||
-    requestPath === LOGIN_PATH ||
-    requestPath.startsWith(`${LOGIN_PATH}/`) ||
+    requestPath === ROUTE_MESSAGE ||
+    requestPath.startsWith(`${ROUTE_MESSAGE}/`) ||
+    requestPath === ROUTE_LOGIN ||
+    requestPath.startsWith(`${ROUTE_LOGIN}/`) ||
     requestPath === "/server-login" ||
     requestPath === "/server-logout" ||
     requestPath.startsWith("/api/");
@@ -612,6 +620,7 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
-app.listen(3000, () => {
-  console.log("🚀 Server running on port 3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
