@@ -8,8 +8,26 @@ import QuotesSection from "./QuotesSection";
 import { getClassTimingState } from "../utils/date";
 import WeatherWidget from "./WeatherWidget";
 import useWeather from "../hooks/useWeather";
+import { PiGlobeXBold } from "react-icons/pi";
 
 export default function ScheduleBoard() {
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
   const weather = useWeather();
   const { classes, loading, error } = useRoutine();
   const {
@@ -103,7 +121,16 @@ export default function ScheduleBoard() {
             )}
           </div>
         </div>
-
+        <div
+          className={`absolute bottom-18 right-2 flex w-full justify-end ${
+            isOnline ? "invisible" : ""
+          }`}
+          // style={{ width: qrSize }}
+          aria-hidden={isOnline ? "true" : "false"}
+          title={isOnline ? undefined : "No internet connection"}
+        >
+          <PiGlobeXBold className="text-red-500" />
+        </div>
         <div className="col-span-10 flex h-full flex-col">
           <div className="flex h-35 max-[1750px]:h-18 justify-end rounded-lg backdrop-blur-md ">
             <div className="flex h-full w-full items-stretch justify-end">
@@ -128,7 +155,9 @@ export default function ScheduleBoard() {
               />
 
               <div className="ml-2 flex h-full min-w-[100px] flex-col items-end justify-center overflow-hidden rounded-lg border border-white/10 bg-black/10 px-6 py-4 text-right max-[1750px]:px-4">
-                <div className="text-sm font-semibold text-white/60">{currentDate}</div>
+                <div className="text-sm font-semibold text-white/60">
+                  {currentDate}
+                </div>
                 <div className=" text-3xl font-bold tabular-nums text-white max-[1750px]:text-xl">
                   {currentTime}
                 </div>
