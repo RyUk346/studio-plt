@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const BASE_PATH = "/StudioPLT/PLT-OP-LP/Layer1";
+const BASE_PATH = "/studio-plt/Layer1";
 const REDIRECT_SECONDS = 5;
 
 export default function NotFound() {

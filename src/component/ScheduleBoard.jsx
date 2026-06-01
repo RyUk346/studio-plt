@@ -75,7 +75,12 @@ export default function ScheduleBoard() {
 
     if (liveClass) return liveClass;
 
-    return classes[0] || null;
+    const nextClass = classes.find((item) => {
+      const timing = getClassTimingState(item.start, item.end, now);
+      return timing.state === "scheduled";
+    });
+
+    return nextClass || null;
   }, [classes, now]);
 
   if (loading) {
