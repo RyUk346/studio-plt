@@ -5,6 +5,7 @@ import SlidingLeaderboard from "./SlidingLeaderboard";
 import useLeaderboard from "../hooks/useLeaderboard";
 import useQuotes from "../hooks/useQuotes";
 import QuotesSection from "./QuotesSection";
+import ScorePollWidget from "./ScorePollWidget";
 import { getClassTimingState } from "../utils/date";
 import WeatherWidget from "./WeatherWidget";
 import useWeather from "../hooks/useWeather";
@@ -172,8 +173,17 @@ export default function ScheduleBoard() {
 
           <div className="flex-1" />
 
+          {/* Quote section — temporarily replaced by the Score Poll widget.
+              To bring it back: delete the Score Poll block below and
+              uncomment this one.
           <div className="h-35 max-[1750px]:h-15">
             <QuotesSection quotes={quotes} />
+          </div>
+          */}
+
+          {/* Score Poll widget — fills the same strip the quote section used. */}
+          <div className="h-35 max-[1750px]:h-15">
+            <ScorePollWidget />
           </div>
         </div>
       </div>

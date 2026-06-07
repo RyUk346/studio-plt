@@ -198,6 +198,208 @@ function parseSheetDate(dateStr) {
   return new Date(year, month - 1, day, hour, minute, second).getTime();
 }
 
+// ---------------- Weather (met.no primary, Open-Meteo fallback) ----------------
+//
+// The in-store screen's browser is locked down to this origin and cannot
+// reach external weather APIs directly (cross-origin request -> "Failed to
+// fetch"). It also can't use Open-Meteo's free tier reliably: that tier is
+// non-commercial only and has been returning 502s / blocking commercial IPs.
+//
+// So the server fetches weather on the browser's behalf via a provider chain:
+//   PRIMARY  : met.no (Norwegian Met Institute, powers Yr) — free, no key,
+//              licensed for COMMERCIAL use. Requires an identifying
+//              User-Agent with contact info or it returns 403.
+//   FALLBACK : Open-Meteo — used automatically if met.no fails. Set
+//              OPEN_METEO_API_KEY to use the paid/commercial host.
+//
+// Both providers are normalised into the same shape, so the frontend widget
+// (which reads data.current.* and data.daily.*) stays unchanged.
+
+const WEATHER_LAT = Number(process.env.VITE_WEATHER_LAT) || 51.5072; // set yours
+const WEATHER_LON = Number(process.env.VITE_WEATHER_LON) || -0.1276; // set yours
+const OPEN_METEO_API_KEY = process.env.OPEN_METEO_API_KEY || "";
+const OPEN_METEO_HOST = OPEN_METEO_API_KEY
+  ? "https://customer-api.open-meteo.com"
+  : "https://api.open-meteo.com";
+const OPEN_METEO_KEY_PARAM = OPEN_METEO_API_KEY
+  ? `&apikey=${OPEN_METEO_API_KEY}`
+  : "";
+
+// met.no REQUIRES an identifying User-Agent with contact info, or it returns 403.
+const WEATHER_HEADERS = {
+  "User-Agent":
+    "StudioPLTScreen/1.0 hello@hyperglow.co.uk (+https://hyperglow.co.uk)",
+  Accept: "application/json",
+};
+
+// met.no uses text symbol_codes; the frontend speaks numeric WMO codes (as
+// Open-Meteo returns). Translate to the nearest WMO code.
+function metnoSymbolToWmo(symbol = "") {
+  const s = String(symbol)
+    .replace(/_(day|night|polartwilight)$/, "")
+    .toLowerCase();
+  if (s === "clearsky") return 0;
+  if (s === "fair") return 1;
+  if (s === "partlycloudy") return 2;
+  if (s === "cloudy") return 3;
+  if (s === "fog") return 45;
+  if (/^lightrain(showers)?$/.test(s)) return 61; // light rain / drizzle band
+  if (s.includes("sleet")) return 66; // freezing-rain band
+  if (s.includes("snow")) return 73;
+  if (s.includes("thunder")) return 95;
+  if (s.includes("rain")) return 63; // any remaining rain
+  return 3; // safe default: cloudy
+}
+
+const metnoIsDay = (symbol = "") => (/_night$/.test(symbol) ? 0 : 1);
+
+// Europe/London "today" (YYYY-MM-DD) + UTC offset (+HH:MM), computed inline.
+function londonTodayAndOffset() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZoneName: "shortOffset",
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  const today = `${map.year}-${map.month}-${map.day}`;
+  const m = (map.timeZoneName || "GMT").match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/);
+  let offset = "+00:00";
+  if (m) {
+    const sign = m[1].startsWith("-") ? "-" : "+";
+    const hh = String(Math.abs(Number(m[1]))).padStart(2, "0");
+    offset = `${sign}${hh}:${m[2] || "00"}`;
+  }
+  return { today, offset };
+}
+
+// Fetch met.no and normalise to Open-Meteo's shape.
+async function fetchFromMetNo(lat, lon) {
+  const fRes = await fetch(
+    `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`,
+    { headers: WEATHER_HEADERS },
+  );
+  if (!fRes.ok) throw new Error(`met.no forecast failed: ${fRes.status}`);
+  const fData = await fRes.json();
+  const series = fData?.properties?.timeseries;
+  if (!Array.isArray(series) || !series.length) {
+    throw new Error("met.no forecast: empty timeseries");
+  }
+
+  const now = series[0];
+  const instant = now?.data?.instant?.details || {};
+  const nextHour = now?.data?.next_1_hours || now?.data?.next_6_hours || {};
+  const symbol = nextHour?.summary?.symbol_code || "";
+  const curTemp = Number(instant.air_temperature);
+
+  const { today, offset } = londonTodayAndOffset();
+
+  // Daily max/min derived from the hourly series for today (London date).
+  const temps = series
+    .filter(
+      (e) =>
+        new Date(e.time)
+          .toLocaleString("sv-SE", { timeZone: "Europe/London" })
+          .slice(0, 10) === today,
+    )
+    .map((e) => Number(e?.data?.instant?.details?.air_temperature))
+    .filter((n) => Number.isFinite(n));
+  const tMax = temps.length ? Math.max(...temps) : curTemp;
+  const tMin = temps.length ? Math.min(...temps) : curTemp;
+
+  // Sunrise / sunset (separate met.no endpoint).
+  const sRes = await fetch(
+    `https://api.met.no/weatherapi/sunrise/3.0/sun?lat=${lat}&lon=${lon}` +
+      `&date=${today}&offset=${encodeURIComponent(offset)}`,
+    { headers: WEATHER_HEADERS },
+  );
+  if (!sRes.ok) throw new Error(`met.no sunrise failed: ${sRes.status}`);
+  const sData = await sRes.json();
+  const sunrise = sData?.properties?.sunrise?.time;
+  const sunset = sData?.properties?.sunset?.time;
+  if (!sunrise || !sunset) throw new Error("met.no sunrise: missing times");
+
+  return {
+    source: "met.no",
+    current: {
+      temperature_2m: curTemp,
+      weather_code: metnoSymbolToWmo(symbol),
+      is_day: metnoIsDay(symbol),
+    },
+    daily: {
+      sunrise: [sunrise],
+      sunset: [sunset],
+      temperature_2m_max: [tMax],
+      temperature_2m_min: [tMin],
+    },
+  };
+}
+
+// Open-Meteo fallback, normalised to the same shape.
+async function fetchFromOpenMeteo(lat, lon) {
+  const url =
+    `${OPEN_METEO_HOST}/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=temperature_2m,weather_code` +
+    `&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min` +
+    `&timezone=auto` +
+    OPEN_METEO_KEY_PARAM;
+  const res = await fetch(url, { headers: WEATHER_HEADERS });
+  if (!res.ok) throw new Error(`Open-Meteo failed: ${res.status}`);
+  const data = await res.json();
+  if (!data?.current) throw new Error("Open-Meteo: missing current");
+  return {
+    source: "open-meteo",
+    current: data.current,
+    daily: data.daily || {},
+  };
+}
+
+// Provider chain: met.no first, Open-Meteo as automatic fallback. Retries
+// once per provider to ride out transient blips.
+async function fetchWeatherNormalised(lat, lon) {
+  const providers = [
+    () => fetchFromMetNo(lat, lon),
+    () => fetchFromOpenMeteo(lat, lon),
+  ];
+  let lastErr;
+  for (const provider of providers) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        return await provider();
+      } catch (err) {
+        lastErr = err;
+        console.warn(
+          `[weather] provider attempt ${attempt} failed:`,
+          err.message,
+        );
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+  }
+  throw lastErr || new Error("All weather providers failed");
+}
+
+const WEATHER_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let weatherCache = null; // { data, timestamp }
+
+app.get("/api/weather", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  try {
+    if (weatherCache && Date.now() - weatherCache.timestamp < WEATHER_TTL_MS) {
+      return res.json(weatherCache.data);
+    }
+    const data = await fetchWeatherNormalised(WEATHER_LAT, WEATHER_LON);
+    weatherCache = { data, timestamp: Date.now() };
+    return res.json(data);
+  } catch (error) {
+    console.error("api/weather error:", error.message);
+    // Serve stale cache rather than breaking the widget on a transient blip.
+    if (weatherCache) return res.json(weatherCache.data);
+    return res.status(502).json({ error: error.message });
+  }
+});
+
 app.get("/server-login", (req, res) => {
   try {
     const token = String(req.query.token || "");

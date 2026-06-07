@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "../utils/api";
 
 import sunnyDay from "../assets/weather/Sunny.png";
 import clearNight from "../assets/weather/clear-night.png";
@@ -12,10 +13,12 @@ import snow from "../assets/weather/Snow.png";
 import thunderstorm from "../assets/weather/thunderstorm.png";
 import fallback from "../assets/weather/default.png";
 
-const lat = import.meta.env.VITE_WEATHER_LAT;
-const lon = import.meta.env.VITE_WEATHER_LON;
+// Call our own server (same-origin) instead of api.open-meteo.com directly.
+// The in-store screen's browser can't reach external weather APIs; the
+// server proxies the request (met.no primary, Open-Meteo fallback).
+// See /api/weather in server.js.
+const WEATHER_API_URL = `${API_BASE}/api/weather`;
 
-const WEATHER_API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min&timezone=auto`;
 function isDayTime(sunrise, sunset) {
   const now = new Date();
   const sunriseTime = new Date(sunrise);
@@ -70,16 +73,16 @@ function getWeatherMeta(code, temp, isDay) {
 }
 
 export default function useWeather() {
- const [weather, setWeather] = useState({
-  temperature: null,
-  maxTemperature: null,
-  minTemperature: null,
-  icon: fallback,
-  label: "Loading",
-  loading: true,
-  error: "",
-  isDay: true,
-});
+  const [weather, setWeather] = useState({
+    temperature: null,
+    maxTemperature: null,
+    minTemperature: null,
+    icon: fallback,
+    label: "Loading",
+    loading: true,
+    error: "",
+    isDay: true,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -121,17 +124,20 @@ export default function useWeather() {
 
         if (isMounted) {
           setWeather({
-          temperature: Math.round(current.temperature_2m),
-          maxTemperature: Math.round(maxTemperature),
-          minTemperature: Math.round(minTemperature),
-          icon: meta.icon,
-          label: meta.label,
-          loading: false,
-          error: "",
-          isDay,
-        });
+            temperature: Math.round(current.temperature_2m),
+            maxTemperature: Math.round(maxTemperature),
+            minTemperature: Math.round(minTemperature),
+            icon: meta.icon,
+            label: meta.label,
+            loading: false,
+            error: "",
+            isDay,
+          });
         }
       } catch (error) {
+        console.error("[useWeather] fetch failed:", error, {
+          url: WEATHER_API_URL,
+        });
         if (isMounted) {
           setWeather((prev) => ({
             ...prev,
