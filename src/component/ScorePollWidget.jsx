@@ -84,7 +84,9 @@ function useFixtures() {
           : data
             ? Object.values(data)
             : [];
-        if (active) setFixtures(list);
+        // Sticky: only adopt a non-empty list, never clear it on a transient
+        // empty/missing response. Keeps fixtures stable between polls.
+        if (active && list.length) setFixtures(list);
       } catch {
         /* keep last value */
       } finally {
