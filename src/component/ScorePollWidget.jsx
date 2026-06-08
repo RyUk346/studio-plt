@@ -373,7 +373,7 @@ export default function ScorePollWidget() {
                 flagH={flagH}
               />
               <span className="shrink-0 text-white font-bold text-sm px-1">
-                Vs
+                v
               </span>
               <TeamSide
                 team={teamB}
