@@ -135,46 +135,16 @@ function VoteQR({ matchId, size }) {
   const url = matchId
     ? `${WIDGET_BASE}/vote?m=${encodeURIComponent(matchId)}`
     : `${WIDGET_BASE}/vote`;
-  const badge = Math.round(size * 0.3);
   return (
-    <div className="relative bg-white rounded-lg leading-none">
+    <div className="bg-white rounded-lg leading-none">
       <QRCode
         value={url}
-        level="H"
+        level="M"
         size={size}
         bgColor="#ffffff"
         fgColor="#0b1020"
         style={{ width: size, height: size }}
       />
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div
-          className="relative flex items-center justify-center bg-white rounded-md shadow-sm"
-          style={{ width: badge, height: badge }}
-        >
-          <svg
-            viewBox="0 0 40 40"
-            width={badge}
-            height={badge}
-            fill="none"
-            stroke="#0b1020"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="absolute inset-0"
-          >
-            <path d="M5 13V7a2 2 0 0 1 2-2h6" />
-            <path d="M27 5h6a2 2 0 0 1 2 2v6" />
-            <path d="M35 27v6a2 2 0 0 1-2 2h-6" />
-            <path d="M13 35H7a2 2 0 0 1-2-2v-6" />
-          </svg>
-          <span
-            className="relative font-extrabold text-[#0b1020] tracking-tight leading-none"
-            style={{ fontSize: Math.max(6, Math.round(badge * 0.2)) }}
-          >
-            VOTE
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
