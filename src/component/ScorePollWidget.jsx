@@ -137,15 +137,24 @@ function VoteQR({ matchId, size }) {
   const url = matchId
     ? `${WIDGET_BASE}/vote?m=${encodeURIComponent(matchId)}`
     : `${WIDGET_BASE}/vote`;
+  // A white quiet zone (padding) around the code is required for cameras to
+  // lock on — without it the rounded corners clip the finder patterns and
+  // scanning fails on a large screen / from a distance. Level "L" keeps the
+  // module count low so each module is as big (and as scannable) as possible.
+  const pad = Math.max(8, Math.round(size * 0.08));
+  const inner = Math.max(40, size - pad * 2);
   return (
-    <div className="bg-white rounded-lg leading-none">
+    <div
+      className="bg-white rounded-lg flex items-center justify-center"
+      style={{ width: size, height: size, padding: pad }}
+    >
       <QRCode
         value={url}
-        level="M"
-        size={size}
+        level="L"
+        size={inner}
         bgColor="#ffffff"
-        fgColor="#0b1020"
-        style={{ width: size, height: size }}
+        fgColor="#000000"
+        style={{ width: inner, height: inner }}
       />
     </div>
   );
@@ -291,7 +300,12 @@ export default function ScorePollWidget() {
   }, []);
   const PAD_Y = 16; // py-2 (8px top + 8px bottom)
   const inner = Math.max(0, boxH - PAD_Y);
-  const qrSize = Math.max(50, boxH - 2); // QR sits outside the box, full height
+  // Fixed QR size (independent of the strip height) so it's reliably large
+  // enough to scan from across the room. It's bottom-anchored in its column,
+  // so anything taller than the strip overflows upward into the empty space
+  // above — never off the bottom of the screen. Tweak this one number to
+  // resize the QR everywhere in this widget.
+  const qrSize = 200;
   const flagH = Math.max(38, Math.round(inner * 0.52));
   const flagW = Math.round(flagH * 1.6);
 
@@ -392,8 +406,11 @@ export default function ScorePollWidget() {
 
         {/* QR — outside the box, in its own right column (like the quote section) */}
         {!loading && (
-          <div className="flex h-full flex-col items-center justify-center shrink-0">
-            <VoteQR matchId={isIntro ? undefined : match?.id} size={qrSize} />
+          <div className="flex h-full flex-col items-center justify-end shrink-0">
+            {/* One constant QR for every slide — always the generic vote page
+                (which already lists all matches), so the code never changes and
+                a camera can stay locked on it. */}
+            <VoteQR size={qrSize} />
           </div>
         )}
       </div>
