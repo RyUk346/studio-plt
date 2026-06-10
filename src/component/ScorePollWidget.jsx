@@ -141,8 +141,8 @@ function VoteQR({ matchId, size }) {
   // lock on — without it the rounded corners clip the finder patterns and
   // scanning fails from a distance. Level "L" keeps the module count low so
   // each module is as big (and as scannable) as possible.
-  const pad = 8; // fixed 8px white quiet zone
-  const inner = Math.max(40, size - pad * 2);
+  const pad = 6; // fixed 8px white quiet zone
+  const inner = Math.max(40, size - pad);
   return (
     <div
       className="bg-white rounded-lg flex items-center justify-center"
@@ -300,7 +300,7 @@ export default function ScorePollWidget() {
   }, []);
   const PAD_Y = 16; // py-2 (8px top + 8px bottom)
   const inner = Math.max(0, boxH - PAD_Y);
-  const qrSize = Math.max(50, boxH - 2); // QR sits outside the box, full height
+  const qrSize = Math.max(64, boxH - 2); // QR sits outside the box, full height
   const flagH = Math.max(38, Math.round(inner * 0.52));
   const flagW = Math.round(flagH * 1.6);
 
