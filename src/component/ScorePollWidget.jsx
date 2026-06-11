@@ -103,13 +103,20 @@ function useFixtures() {
   return { fixtures: fixtures || [], loading };
 }
 
+// Last successfully fetched votes, kept per match. When the connection drops,
+// each match keeps showing its own last-known numbers (never blank, never the
+// wrong match's numbers, and no error shown).
+const VOTE_CACHE = {};
+
 function useVotes(matchId) {
-  const [votes, setVotes] = useState({});
+  const [votes, setVotes] = useState(() => (matchId && VOTE_CACHE[matchId]) || {});
   useEffect(() => {
     if (!matchId) {
       setVotes({});
       return;
     }
+    // Show whatever we last had for this match straight away.
+    setVotes(VOTE_CACHE[matchId] || {});
     let active = true;
     const load = async () => {
       try {
@@ -117,9 +124,12 @@ function useVotes(matchId) {
           `${DB_URL}/polls/${encodeURIComponent(matchId)}/votes.json`,
         );
         const data = await res.json();
-        if (active) setVotes(data || {});
+        if (active) {
+          VOTE_CACHE[matchId] = data || {};
+          setVotes(VOTE_CACHE[matchId]);
+        }
       } catch {
-        /* ignore */
+        /* offline: keep the last-known votes for this match */
       }
     };
     load();
