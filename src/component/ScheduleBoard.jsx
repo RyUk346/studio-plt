@@ -182,9 +182,9 @@ export default function ScheduleBoard() {
           */}
 
           {/* Score Poll widget — fills the same strip the quote section used. */}
-          <div className="h-35 max-[1750px]:h-15">
+          {/* <div className="h-35 max-[1750px]:h-15">
             <ScorePollWidget />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

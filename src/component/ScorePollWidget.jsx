@@ -60,8 +60,20 @@ const fmtKickoffUK = (iso) =>
     minute: "2-digit",
   }).format(new Date(iso));
 
+// Played minute. The free football-data tier usually omits `minute`, so when
+// it's missing we approximate from kickoff (best-effort, ignores the half-time
+// break) to still show "how long it's been playing".
+const playedMinute = (m) => {
+  if (m.minute) return m.minute;
+  const mins = Math.floor((Date.now() - new Date(m.kickoff).getTime()) / 60000);
+  return mins >= 0 && mins <= 130 ? mins : null;
+};
+
 const statusLine = (m) => {
-  if (m.status === "IN_PLAY") return m.minute ? `LIVE ${m.minute}'` : "LIVE";
+  if (m.status === "IN_PLAY") {
+    const min = playedMinute(m);
+    return min != null ? `LIVE ${min}'` : "LIVE";
+  }
   if (m.status === "PAUSED") return "HALF-TIME";
   if (m.status === "FINISHED") return "FULL-TIME";
   return fmtKickoffUK(m.kickoff);
