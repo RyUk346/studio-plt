@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 const ITEMS_PER_PAGE = 9;
-const SLIDE_INTERVAL_MS = 10000;
+// Exported so the board can keep UI 1 on screen for exactly one full
+// leaderboard cycle before looping to UI 2 (reviews).
+export const SLIDE_INTERVAL_MS = 10000;
 
 function capitalize(word = "") {
   return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -67,7 +69,15 @@ function getTier(visits = 0, milestones = {}) {
 };
 }
 
-export default function SlidingLeaderboard({ leaders, milestones }) {
+/* onPageCount reports how many pages there are, so the board can hold UI 1
+   on screen for exactly one full cycle before looping to the reviews panel.
+   The board unmounts this component while reviews are showing, so paging
+   naturally pauses and restarts from page 1 when it comes back. */
+export default function SlidingLeaderboard({
+  leaders,
+  milestones,
+  onPageCount,
+}) {
   const pages = useMemo(() => {
     const chunks = [];
 
@@ -87,6 +97,11 @@ for (let i = 0; i < clubMembers.length; i += ITEMS_PER_PAGE) {
 
   const [pageIndex, setPageIndex] = useState(0);
   const [animateCards, setAnimateCards] = useState(true);
+
+  // Let the board size UI 1's on-screen time to the number of pages.
+  useEffect(() => {
+    onPageCount?.(pages.length);
+  }, [pages.length, onPageCount]);
 
   useEffect(() => {
     if (pages.length <= 1) return;

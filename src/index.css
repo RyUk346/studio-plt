@@ -32,3 +32,30 @@ body {
 }
 
 /* Optional: Pause on hover so users can read it */
+
+/* ── Left panel: leaderboard ⇄ reviews loop ───────────────────────────────
+   The side panel alternates between UI 1 (leaderboard) and UI 2 (member
+   reviews). Whichever view comes on screen rises from below and fades in
+   for a smooth hand-off. */
+@keyframes viewFadeUp {
+  0% {
+    transform: translateY(32px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.view-enter {
+  animation: viewFadeUp 700ms cubic-bezier(0.25, 0.9, 0.3, 1) both;
+}
+
+/* Vertical review carousel track. The step animation itself is driven from
+   React via an inline transform + transition (see StudioReviews.jsx): every
+   step the track eases up by exactly one card. will-change keeps the glide
+   on the GPU compositor so the motion stays smooth on the in-store screen. */
+.reviews-track {
+  will-change: transform;
+}

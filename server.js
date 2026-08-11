@@ -400,6 +400,250 @@ app.get("/api/weather", async (req, res) => {
   }
 });
 
+/* ──────────────────────────────────────────────────────────────────────────
+   API: Momence reviews (proxy for the screen's StudioReviews widget)
+
+   Studio PLT collects class reviews inside Momence. Their website embeds
+   Momence's own reviews.js plugin, but that plugin renders its own markup
+   and can't be styled to match this board — so we read the SAME public
+   endpoint the plugin calls and render the data ourselves.
+
+   Why this runs server-side rather than straight from the browser:
+     1. The signature (`s=`) stays out of the client bundle.
+     2. The in-store screen can't always reach external APIs directly —
+        exactly the reason /api/weather is proxied too.
+     3. One cached upstream call serves every refresh, instead of the
+        screen hammering Momence every hour.
+
+   Only 5-star reviews WITH written text are kept (a large share of Momence
+   reviews are star-only), newest first, capped at MOMENCE_REVIEWS_MAX.
+
+   Setup — add to .env:
+     MOMENCE_HOST_ID=113154
+     MOMENCE_SIGNATURE=<the `s=` value from the embed snippet>
+   ────────────────────────────────────────────────────────────────────────── */
+const MOMENCE_HOST_ID = process.env.MOMENCE_HOST_ID || "";
+const MOMENCE_SIGNATURE = process.env.MOMENCE_SIGNATURE || "";
+const MOMENCE_REVIEWS_TTL_MS = 60 * 60 * 1000; // refresh upstream hourly
+const MOMENCE_REVIEWS_MAX = 6; // reviews kept and shown
+const MOMENCE_PAGE_SIZE = 20; // per upstream request
+const MOMENCE_MAX_PAGES = 5; // stop digging after 100 reviews
+
+let momenceReviewsCache = null; // { data: { reviews }, timestamp }
+
+async function fetchMomenceReviewPage(page = 0) {
+  const url =
+    `https://api.momence.com/host-plugins/host/${MOMENCE_HOST_ID}/reviews` +
+    `?pageSize=${MOMENCE_PAGE_SIZE}` +
+    `&page=${page}` +
+    `&isFullLastNameVisible=false` +
+    `&isTextOnlyEnabled=false` +
+    `&isSessionAndTeacherInfoEnabled=true` +
+    `&s=${encodeURIComponent(MOMENCE_SIGNATURE)}`;
+
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Momence reviews HTTP ${res.status}`);
+  }
+
+  return res.json();
+}
+
+// "Studio PLT | Barre x Reformer (Women only)" → "Barre x Reformer (Women only)"
+function cleanSessionName(name = "") {
+  return String(name).split("|").pop().trim();
+}
+
+// Keep only 5-star reviews that have written text (skip star-only ratings)
+// and normalise them into the shape the widget renders.
+function extractFiveStarWithText(json) {
+  const out = [];
+
+  for (const r of json?.payload || []) {
+    const text = String(r.comment || "").trim();
+    if (!text) continue;
+    if (Number(r.grade) !== 5) continue;
+
+    const timestamp = new Date(r.createdAt).getTime();
+
+    out.push({
+      id: r.id ?? null,
+      name: String(r.reviewerName || "").trim() || "Studio member",
+      rating: 5,
+      text,
+      timestamp: Number.isFinite(timestamp) ? timestamp : 0,
+      avatarUrl: r.reviewerProfileImage || null,
+      sessionName: cleanSessionName(r.sessionName),
+      teacherName: String(r.teacherFullName || "").trim(),
+    });
+  }
+
+  return out;
+}
+
+/* ---------------- Review moderation ----------------------------------
+   Momence reviews come from verified, paying members on Studio PLT's own
+   platform, so the risk profile is far lower than public Google reviews.
+   Two layers are applied (the same first two the quote form uses):
+
+     Layer 1 — deterministic banned-word filter (isMessageSafe)
+     Layer 2 — OpenAI omni-moderation endpoint  (isAiMessageSafe)
+
+   Verdicts are cached per review id — reviews are immutable once posted,
+   so each one is ever checked at most once.
+
+   Layer 1 fails CLOSED (no OpenAI dependency, so a rejection is real).
+   Layer 2 fails OPEN: isAiMessageSafe returns true / false / "unknown",
+   and "unknown" (no API key, or OpenAI unreachable) is treated as a pass —
+   the review already cleared the word filter and came from a verified
+   member, so an OpenAI outage shouldn't blank the whole panel. To fail
+   closed instead, see the marked line in isReviewSafeToShow below.
+
+   Note: an "unknown" verdict is NOT cached, so it gets re-checked on the
+   next refresh once OpenAI is reachable again.
+   --------------------------------------------------------------------- */
+const momenceModerationCache = new Map(); // review key -> boolean (safe)
+
+async function isReviewSafeToShow(review) {
+  const text = String(review?.text || "").trim();
+  const name = String(review?.name || "").trim();
+  if (!text) return false;
+
+  const key = review.id || `${name}|${review.timestamp}`;
+  if (momenceModerationCache.has(key)) return momenceModerationCache.get(key);
+
+  // Layer 1 — deterministic word filter
+  if (!isMessageSafe(text) || !isMessageSafe(name)) {
+    console.log(`[reviews] word filter rejected review by "${name}"`);
+    momenceModerationCache.set(key, false);
+    return false;
+  }
+
+  // Layer 2 — OpenAI moderation. Returns true / false / "unknown".
+  const verdict = await isAiMessageSafe(text);
+
+  // ↓ fail-open line: use `verdict !== true` here to fail CLOSED instead.
+  if (verdict === false) {
+    console.log(`[reviews] AI moderation rejected review by "${name}"`);
+    momenceModerationCache.set(key, false);
+    return false;
+  }
+
+  if (verdict === "unknown") {
+    // Don't cache — re-check next refresh once OpenAI is reachable again.
+    console.warn(
+      `[reviews] moderation unavailable — showing "${key}" on word filter alone`,
+    );
+    return true;
+  }
+
+  momenceModerationCache.set(key, true);
+  return true;
+}
+
+async function filterReviewsForDisplay(reviews) {
+  const safe = [];
+  for (const review of reviews) {
+    if (await isReviewSafeToShow(review)) safe.push(review);
+  }
+  return safe;
+}
+
+// Page through Momence newest-first until we have MOMENCE_REVIEWS_MAX safe
+// reviews with text, or we run out of pages.
+async function refreshMomenceReviews() {
+  let kept = [];
+  let page = 0;
+
+  while (kept.length < MOMENCE_REVIEWS_MAX && page < MOMENCE_MAX_PAGES) {
+    const json = await fetchMomenceReviewPage(page);
+    const batch = await filterReviewsForDisplay(extractFiveStarWithText(json));
+
+    kept = [...kept, ...batch];
+
+    const { pagination } = json || {};
+    const seen = (page + 1) * MOMENCE_PAGE_SIZE;
+    if (!pagination || seen >= (pagination.totalCount || 0)) break;
+
+    page += 1;
+  }
+
+  const reviews = kept
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, MOMENCE_REVIEWS_MAX);
+
+  momenceReviewsCache = { data: { reviews }, timestamp: Date.now() };
+  return reviews;
+}
+
+// Collapse concurrent refreshes into one. Without this, several requests
+// arriving on a cold cache each start their own upstream pull AND their own
+// moderation pass over the same reviews.
+let momenceRefreshInFlight = null;
+
+function refreshMomenceReviewsOnce() {
+  if (!momenceRefreshInFlight) {
+    momenceRefreshInFlight = refreshMomenceReviews().finally(() => {
+      momenceRefreshInFlight = null;
+    });
+  }
+  return momenceRefreshInFlight;
+}
+
+app.get("/api/reviews", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  // Not configured yet — return an empty list so the widget just hides and
+  // the board stays on the leaderboard.
+  if (!MOMENCE_HOST_ID || !MOMENCE_SIGNATURE) {
+    return res.json({ reviews: [] });
+  }
+
+  try {
+    if (
+      momenceReviewsCache &&
+      Date.now() - momenceReviewsCache.timestamp < MOMENCE_REVIEWS_TTL_MS
+    ) {
+      return res.json(momenceReviewsCache.data);
+    }
+
+    const reviews = await refreshMomenceReviewsOnce();
+    return res.json({ reviews });
+  } catch (error) {
+    console.error("api/reviews error:", error.message);
+    // Serve stale cache rather than breaking the widget on a transient blip.
+    if (momenceReviewsCache) {
+      return res.json(momenceReviewsCache.data);
+    }
+    return res.status(502).json({ reviews: [], error: error.message });
+  }
+});
+
+// API: OPTIONAL manual refresh — the hourly TTL above picks new reviews up
+// on its own, this is just a "show it right now" shortcut. Open in a browser.
+app.get("/api/refresh-reviews", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  if (!MOMENCE_HOST_ID || !MOMENCE_SIGNATURE) {
+    return res
+      .status(400)
+      .json({ error: "MOMENCE_HOST_ID / MOMENCE_SIGNATURE are not set" });
+  }
+
+  try {
+    momenceReviewsCache = null; // drop the cache, force a live pull
+    const reviews = await refreshMomenceReviewsOnce();
+    return res.json({ success: true, count: reviews.length, reviews });
+  } catch (error) {
+    console.error("api/refresh-reviews error:", error.message);
+    return res.status(502).json({ error: error.message });
+  }
+});
+
 app.get("/server-login", (req, res) => {
   try {
     const token = String(req.query.token || "");
