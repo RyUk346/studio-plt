@@ -53,7 +53,7 @@ body {
 }
 
 /* Vertical review carousel track. The step animation itself is driven from
-   React via an inline transform + transition (see StudioReviews.jsx): every
+   React via an inline transform + transition (see ReviewsCarousel.jsx): every
    step the track eases up by exactly one card. will-change keeps the glide
    on the GPU compositor so the motion stays smooth on the in-store screen. */
 .reviews-track {

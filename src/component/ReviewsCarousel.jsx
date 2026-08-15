@@ -2,22 +2,27 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { timeAgo } from "../utils/date";
 
 /* ──────────────────────────────────────────────────────────────────────────
-   MEMBER REVIEWS — UI 2 of the side panel's loop
+   REVIEWS CAROUSEL — shared by both review phases of the side panel's loop
 
-   Reviews come from Momence via this app's own backend (GET /api/reviews);
-   see useReviews.js and server.js. This component only renders them.
+   Renders EITHER source, because both backends normalise to the same shape:
+     Momence members  → GET /api/reviews        (useReviews.js)
+     Google           → GET /api/google-reviews (useGoogleReviews.js)
+
+   Shape: { id, name, rating, text, timestamp, avatarUrl }, plus the optional
+   { sessionName, teacherName } that only Momence supplies — the class/teacher
+   line simply doesn't render for Google reviews.
 
    Layout is a VERTICAL CAROUSEL: several cards are visible at once, and
    every `stepMs` the column scrolls up by exactly one card with a smooth
    eased transition. Repeat is OFF — the track plays through the list once
    and then rests on the last review (it does not wrap back to the top).
 
-   The board mounts this only while UI 2 is on screen, so the carousel
+   The board mounts this only while its phase is on screen, so the carousel
    restarts from the top on its own each cycle. Review data lives in the
-   board's useReviews hook, so unmounting never interrupts the refresh.
+   board's hooks, so unmounting never interrupts the refresh.
 
    Props:
-   - reviews → the moderated 5-star reviews to show (from useReviews)
+   - reviews → the moderated 5-star reviews to show
    - stepMs  → pause per step, driven by the board (REVIEW_STEP_MS)
    ────────────────────────────────────────────────────────────────────────── */
 const STEP_TRANSITION_MS = 1400; // silky 1.4s glide per step
@@ -25,7 +30,7 @@ const STEP_TRANSITION_MS = 1400; // silky 1.4s glide per step
 // smoother on a big in-store screen than a sharp ease-out.
 const STEP_EASING = "cubic-bezier(0.45, 0.05, 0.25, 1)";
 
-export default function StudioReviews({ reviews = [], stepMs = 6000 }) {
+export default function ReviewsCarousel({ reviews = [], stepMs = 6000 }) {
   // Carousel position: index of the card currently at the top of the viewport.
   const [step, setStep] = useState(0);
   const [offset, setOffset] = useState(0);

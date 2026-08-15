@@ -8,21 +8,32 @@ import useLeaderboard from "../hooks/useLeaderboard";
 import useQuotes from "../hooks/useQuotes";
 import QuotesSection from "./QuotesSection";
 import ScorePollWidget from "./ScorePollWidget";
-import StudioReviews from "./StudioReviews";
+import ReviewsCarousel from "./ReviewsCarousel";
 import useReviews from "../hooks/useReviews";
+import useGoogleReviews from "../hooks/useGoogleReviews";
+import { buildRotation } from "../utils/panelRotation";
 import { getClassTimingState } from "../utils/date";
 import WeatherWidget from "./WeatherWidget";
 import useWeather from "../hooks/useWeather";
 import { PiGlobeXBold } from "react-icons/pi";
 
-/* Side-panel loop timings.
-   UI 1 = leaderboard, UI 2 = member reviews. Each view stays on screen just
-   long enough to play through its own content once, then hands over. */
+/* Side-panel loop timings. The panel cycles
+     leaderboard → member reviews → leaderboard → Google reviews
+   (see utils/panelRotation.js). Each phase stays on screen just long enough
+   to play through its own content once, then hands over. */
 const REVIEW_STEP_MS = 6000; // pause per review card
-const REVIEW_TAIL_MS = 2500; // rest on the last review before handing back
+const REVIEW_TAIL_MS = 2500; // rest on the last review before handing over
 
-const REVIEWS_HEADING = "Member Reviews";
-const REVIEWS_SUBHEADING = "What our community is saying";
+const PANEL_HEADINGS = {
+  reviews: {
+    heading: "Life at Pilates",
+    subheading: "What our community is saying",
+  },
+  google: {
+    heading: "Google Reviews",
+    subheading: "What people say about us on Google",
+  },
+};
 
 export default function ScheduleBoard() {
   const [isOnline, setIsOnline] = useState(
@@ -54,19 +65,23 @@ export default function ScheduleBoard() {
   } = useLeaderboard();
   const { quotes } = useQuotes();
   const { reviews } = useReviews();
+  const { reviews: googleReviews } = useGoogleReviews();
 
-  /* ── Side panel: leaderboard ⇄ reviews loop ──────────────────────────
-     `view` is which UI the left column is showing. Each view's duration is
-     derived from its own content so nothing gets cut off mid-cycle:
+  /* ── Side panel rotation ─────────────────────────────────────────────
+     The left column cycles leaderboard → member reviews → leaderboard →
+     Google reviews. Each phase's duration is derived from its own content
+     so nothing gets cut off mid-cycle:
        - leaderboard → one full pass of its pages
-       - reviews     → one step per review, plus a short rest at the end
-     If either side has nothing to show, the panel simply parks on the
-     other one and stops looping. */
-  const [view, setView] = useState("leaderboard");
+       - either review phase → one step per review, plus a short rest
+
+     Any phase whose source is empty is dropped from the cycle entirely
+     (see utils/panelRotation.js), so a missing SerpApi key or an empty
+     leaderboard just means fewer phases — never a blank panel. */
+  const [phaseIndex, setPhaseIndex] = useState(0);
   // Starts at 1, not 0, on purpose. SlidingLeaderboard only reports its page
-  // count while it's mounted, so if the panel ever parks on reviews before
-  // the leaderboard has rendered once, a 0 here would keep hasLeaderboard
-  // false forever and the loop could never come back.
+  // count while it's mounted, so if the panel ever starts on a review phase
+  // before the leaderboard has rendered once, a 0 here would keep
+  // hasLeaderboard false forever and the leaderboard could never come back.
   const [leaderPageCount, setLeaderPageCount] = useState(1);
 
   // Stable identity so SlidingLeaderboard's reporting effect doesn't re-fire
@@ -76,28 +91,52 @@ export default function ScheduleBoard() {
   }, []);
 
   const hasReviews = reviews.length > 0;
+  const hasGoogleReviews = googleReviews.length > 0;
   const hasLeaderboard =
     !leaderLoading && !leaderError && leaders.length > 0 && leaderPageCount > 0;
 
-  // Only alternate when BOTH sides have something to show — otherwise the
-  // panel parks on whichever one does. Derived rather than stored, so the
-  // loop can't get stuck on an empty view.
-  const canAlternate = hasReviews && hasLeaderboard;
-  const showingReviews = hasReviews && (!hasLeaderboard || view === "reviews");
+  const rotation = useMemo(
+    () =>
+      buildRotation({
+        leaderboard: hasLeaderboard,
+        reviews: hasReviews,
+        google: hasGoogleReviews,
+      }),
+    [hasLeaderboard, hasReviews, hasGoogleReviews],
+  );
+
+  // Modulo on read rather than clamping on write, so the index stays valid
+  // even when the rotation shrinks (e.g. a source goes empty mid-cycle).
+  const phase = rotation.length
+    ? rotation[phaseIndex % rotation.length]
+    : "leaderboard";
 
   useEffect(() => {
-    if (!canAlternate) return;
+    if (rotation.length <= 1) return; // nothing to rotate to
 
-    const duration = showingReviews
-      ? reviews.length * REVIEW_STEP_MS + REVIEW_TAIL_MS
-      : Math.max(1, leaderPageCount) * SLIDE_INTERVAL_MS;
+    const duration =
+      phase === "leaderboard"
+        ? Math.max(1, leaderPageCount) * SLIDE_INTERVAL_MS
+        : (phase === "google" ? googleReviews.length : reviews.length) *
+            REVIEW_STEP_MS +
+          REVIEW_TAIL_MS;
 
     const timer = setTimeout(() => {
-      setView((prev) => (prev === "reviews" ? "leaderboard" : "reviews"));
+      setPhaseIndex((prev) => (prev + 1) % rotation.length);
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [canAlternate, showingReviews, leaderPageCount, reviews.length]);
+  }, [
+    rotation,
+    phase,
+    phaseIndex,
+    leaderPageCount,
+    reviews.length,
+    googleReviews.length,
+  ]);
+
+  const showingReviews = phase === "reviews" || phase === "google";
+  const panelHeading = PANEL_HEADINGS[phase];
 
   const [now, setNow] = useState(new Date());
 
@@ -169,17 +208,21 @@ export default function ScheduleBoard() {
               colours. */}
           <div className="border-b border-white/50 pb-4 max-[1750px]:pb-2">
             <h2 className="text-4xl font-bold tracking-wide max-[1750px]:text-2xl">
-              {showingReviews ? REVIEWS_HEADING : leaderboardHeading}
+              {panelHeading ? panelHeading.heading : leaderboardHeading}
             </h2>
             <p className="mt-1 text-lg text-white/60 font-semibold max-[1750px]:text-sm">
-              {showingReviews ? REVIEWS_SUBHEADING : leaderboardSubheading}
+              {panelHeading ? panelHeading.subheading : leaderboardSubheading}
             </p>
           </div>
 
-          {/* Only the active view is mounted, so each one restarts from the
-              top of its own cycle every time it comes back on screen. The
-              review data lives in useReviews above, so unmounting the
-              carousel never interrupts its hourly refresh.
+          {/* Only the active phase is mounted, so each one restarts from the
+              top of its own cycle every time it comes back on screen. Review
+              data lives in the hooks above, so unmounting a carousel never
+              interrupts its refresh.
+
+              The `key` forces a fresh mount when switching between the two
+              review sources, so the carousel resets to the first card instead
+              of inheriting the previous source's scroll position.
 
               The leaderboard branch below is kept byte-identical to how it
               was before reviews existed — in particular it carries NO
@@ -188,10 +231,14 @@ export default function ScheduleBoard() {
               an animated element creates a stacking context that changes
               what the blur samples, washing the colours out. */}
           {showingReviews ? (
-            /* UI 2 — member reviews (safe to animate: plain bg-black/25
-               cards, no backdrop-blur to disturb) */
+            /* Review phases — safe to animate: plain bg-black/25 cards,
+               no backdrop-blur to disturb */
             <div className="mt-6 flex min-h-0 flex-1 flex-col overflow-hidden max-[1750px]:mt-3">
-              <StudioReviews reviews={reviews} stepMs={REVIEW_STEP_MS} />
+              <ReviewsCarousel
+                key={phase}
+                reviews={phase === "google" ? googleReviews : reviews}
+                stepMs={REVIEW_STEP_MS}
+              />
             </div>
           ) : (
             /* UI 1 — leaderboard */

@@ -401,7 +401,7 @@ app.get("/api/weather", async (req, res) => {
 });
 
 /* ──────────────────────────────────────────────────────────────────────────
-   API: Momence reviews (proxy for the screen's StudioReviews widget)
+   API: Momence reviews (proxy for the screen's ReviewsCarousel widget)
 
    Studio PLT collects class reviews inside Momence. Their website embeds
    Momence's own reviews.js plugin, but that plugin renders its own markup
@@ -640,6 +640,348 @@ app.get("/api/refresh-reviews", async (req, res) => {
     return res.json({ success: true, count: reviews.length, reviews });
   } catch (error) {
     console.error("api/refresh-reviews error:", error.message);
+    return res.status(502).json({ error: error.message });
+  }
+});
+
+/* ──────────────────────────────────────────────────────────────────────────
+   API: Google reviews (proxy for the screen's Google reviews panel)
+
+   Reads PUBLIC Google reviews via SerpApi's google_maps_reviews engine. No
+   Google Business Profile login needed, and the SerpApi key stays server-side.
+
+   IMPORTANT — use a SerpApi key that belongs to THIS project. Bru Café has its
+   own key and its own monthly quota; sharing one key would have the two
+   screens eating each other's allowance.
+
+   Setup — add to .env:
+     SERPAPI_API_KEY=<key from https://serpapi.com/manage-api-key>
+     GOOGLE_PLACE_ID=      (optional — see auto-resolution below)
+     GOOGLE_PLACE_QUERY=Studio PLT Oadby
+
+   QUOTA: SerpApi's free tier is 100 searches/month. At a 6h TTL this makes
+   ~4 calls/day ≈ 120/month, which OVERSHOOTS the free tier — this key needs a
+   paid plan. Raise GOOGLE_REVIEWS_TTL_MS to 12h (~60/month) to fit the free
+   tier instead. The first seed can cost up to GOOGLE_REVIEWS_SEED_PAGES calls,
+   and resolving the place id costs one more (once, unless pinned in .env).
+   ────────────────────────────────────────────────────────────────────────── */
+const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || "";
+// Google Maps "data_id" — the 0x...:0x... hex identifying the place. If left
+// blank we resolve it from GOOGLE_PLACE_QUERY on first use and log it; pin the
+// logged value here afterwards to save a lookup on every server restart.
+const GOOGLE_PLACE_ID = process.env.GOOGLE_PLACE_ID || "";
+const GOOGLE_PLACE_QUERY = process.env.GOOGLE_PLACE_QUERY || "Studio PLT Oadby";
+
+const GOOGLE_REVIEWS_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const GOOGLE_REVIEWS_MAX = 6; // 5-star reviews kept and shown
+const GOOGLE_REVIEWS_SEED_PAGES = 4; // max pages when first seeding the list
+
+let googleReviewsCache = null; // { data: { reviews }, timestamp }
+let resolvedGooglePlaceId = GOOGLE_PLACE_ID; // filled in by the resolver below
+
+// Resolve the Maps data_id from a place name, once per process. Biased to the
+// studio's coordinates (reused from the weather config) so a generic name
+// can't match a same-named business elsewhere.
+async function resolveGooglePlaceId() {
+  if (resolvedGooglePlaceId) return resolvedGooglePlaceId;
+
+  const url =
+    "https://serpapi.com/search.json?engine=google_maps&type=search&hl=en" +
+    `&q=${encodeURIComponent(GOOGLE_PLACE_QUERY)}` +
+    `&ll=${encodeURIComponent(`@${WEATHER_LAT},${WEATHER_LON},15z`)}` +
+    `&api_key=${encodeURIComponent(SERPAPI_API_KEY)}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`SerpApi place lookup HTTP ${res.status}`);
+
+  const json = await res.json();
+  if (json.error) throw new Error(`SerpApi: ${json.error}`);
+
+  // A precise query lands on place_results; a broader one returns local_results.
+  const dataId = json.place_results?.data_id || json.local_results?.[0]?.data_id;
+  const title = json.place_results?.title || json.local_results?.[0]?.title;
+
+  if (!dataId) {
+    throw new Error(
+      `Could not resolve a Google place for "${GOOGLE_PLACE_QUERY}"`,
+    );
+  }
+
+  resolvedGooglePlaceId = dataId;
+  console.log(
+    `[google-reviews] resolved "${title || GOOGLE_PLACE_QUERY}" -> data_id ${dataId}\n` +
+      `[google-reviews] pin this in .env to skip the lookup: GOOGLE_PLACE_ID=${dataId}`,
+  );
+
+  return dataId;
+}
+
+async function fetchSerpReviewPage(pageToken = null, forceFresh = false) {
+  const dataId = await resolveGooglePlaceId();
+
+  const url =
+    "https://serpapi.com/search.json?engine=google_maps_reviews" +
+    `&data_id=${encodeURIComponent(dataId)}` +
+    "&sort_by=newestFirst&hl=en" +
+    `&api_key=${encodeURIComponent(SERPAPI_API_KEY)}` +
+    // Auto pulls are 6h apart (beyond SerpApi's cache) so they get fresh data
+    // without no_cache. Only the manual endpoint forces a live scrape.
+    (forceFresh ? "&no_cache=true" : "") +
+    (pageToken ? `&next_page_token=${encodeURIComponent(pageToken)}` : "");
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`SerpApi HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.error) throw new Error(`SerpApi: ${json.error}`);
+  return json;
+}
+
+// Keep only 5-star reviews that have written text (skip star-only ratings).
+function extractGoogleFiveStarWithText(json) {
+  const out = [];
+  for (const r of json.reviews || []) {
+    const rating = Number(r.rating) || 0;
+    const text = (r.snippet || "").trim();
+    if (rating !== 5 || !text) continue;
+    out.push({
+      id: r.review_id || r.link || null,
+      name: r.user?.name || "Google user",
+      avatarUrl: r.user?.thumbnail || "",
+      text,
+      rating,
+      timestamp: r.iso_date ? Date.parse(r.iso_date) : 0,
+    });
+  }
+  return out;
+}
+
+/* ---------------- Google review moderation (3-layer, fail-closed) --------
+   Unlike Momence reviews — which come from verified, paying members — anyone
+   with a Google account can post here, so these get the strict treatment:
+
+     Layer 1 — deterministic banned-word/leetspeak filter (isMessageSafe)
+     Layer 2 — OpenAI moderation endpoint            (isAiMessageSafe)
+     Layer 3 — gpt-4o-mini judge against a display policy (moderateGoogleReview)
+
+   A 5-star RATING doesn't guarantee safe TEXT: people leave backhanded
+   remarks, complaints, or profanity under 5 stars.
+
+   Fail-CLOSED: only a review that explicitly clears all three layers is shown.
+   "unknown" verdicts (API down) hide the review but are NOT cached, so the
+   next refresh retries automatically.
+   ------------------------------------------------------------------------- */
+const googleModerationCache = new Map(); // review key -> boolean (safe)
+
+const GOOGLE_REVIEW_MODERATION_PROMPT = `You are a strict content moderator for a public display screen at Studio PLT, a Pilates studio in Oadby, UK. You are given the text of a Google review that will be shown on a large in-studio monitor visible to everyone present, including children.
+
+Even though the review carries a 5-star rating, the TEXT itself may still be unsuitable for public display.
+
+Approve ONLY if the review is a positive, family-friendly customer review appropriate for a public screen.
+
+Reject if the review contains ANY of the following:
+- negative or backhanded remarks about the studio, its classes, instructors, prices, or service (e.g. "great class but the changing rooms were dirty", "5 stars but overpriced")
+- complaints or comments against business policies (booking, cancellation, memberships)
+- profanity, slang, crude or vulgar language, including disguised/leetspeak spellings
+- insults, personal attacks, or mockery of any person or group
+- comments about anyone's body, weight, or appearance that could read as judgemental
+- demotivational, depressing, or unpleasant content
+- political, religious, adult, or otherwise sensitive content
+- personal information (phone numbers, emails, addresses)
+- spam, advertising, or promotion of other businesses
+
+Respond in JSON ONLY:
+{"status": "approved" OR "rejected", "reason": "<short reason>"}`;
+
+// Layer 3 — LLM judge. Returns { status: "approved" | "rejected" | "unknown" }.
+async function moderateGoogleReview(text = "") {
+  if (!openai) {
+    console.warn("OPENAI_API_KEY missing. Google review held from display.");
+    return { status: "unknown" };
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: GOOGLE_REVIEW_MODERATION_PROMPT },
+        { role: "user", content: text },
+      ],
+    });
+
+    const raw = response.choices[0]?.message?.content?.trim() || "";
+    const parsed = JSON.parse(raw);
+    return parsed.status === "approved" || parsed.status === "rejected"
+      ? parsed
+      : { status: "unknown" };
+  } catch (error) {
+    console.error(
+      "Google review moderation LLM failed:",
+      error?.message || error,
+    );
+    return { status: "unknown" };
+  }
+}
+
+async function isGoogleReviewSafeToShow(review) {
+  const text = String(review?.text || "").trim();
+  const name = String(review?.name || "").trim();
+  if (!text) return false;
+
+  const key = review.id || `${name}|${review.timestamp}`;
+  if (googleModerationCache.has(key)) return googleModerationCache.get(key);
+
+  // Layer 1 — deterministic word filter (free, instant)
+  if (!isMessageSafe(text) || !isMessageSafe(name)) {
+    console.log(`[google-reviews] L1 word-filter rejected review by "${name}"`);
+    googleModerationCache.set(key, false);
+    return false;
+  }
+
+  // Layer 2 — OpenAI moderation endpoint
+  const aiSafe = await isAiMessageSafe(text);
+  if (aiSafe === false) {
+    console.log(`[google-reviews] L2 AI moderation rejected review by "${name}"`);
+    googleModerationCache.set(key, false);
+    return false;
+  }
+
+  // Layer 3 — LLM judge against the studio display policy
+  const verdict = await moderateGoogleReview(text);
+
+  if (aiSafe === "unknown" || verdict.status === "unknown") {
+    // Moderation unavailable → hide for now, retry on the next refresh.
+    console.warn(`[google-reviews] moderation unavailable — holding "${key}"`);
+    return false;
+  }
+
+  const safe = verdict.status === "approved";
+  if (!safe) {
+    console.log(
+      `[google-reviews] L3 judge rejected review by "${name}" — ${verdict.reason || "no reason"}`,
+    );
+  }
+  googleModerationCache.set(key, safe);
+  return safe;
+}
+
+// Moderate a batch, preserving order. Sequential to stay gentle on rate
+// limits — worst case is a handful of new reviews per 6h refresh.
+async function filterGoogleReviewsForDisplay(reviews) {
+  const safe = [];
+  for (const review of reviews) {
+    if (await isGoogleReviewSafeToShow(review)) safe.push(review);
+  }
+  return safe;
+}
+
+// Merge incoming into existing, de-dupe by id, keep the newest MAX.
+function mergeGoogleReviews(existing, incoming) {
+  const seen = new Map();
+  for (const r of [...incoming, ...existing]) {
+    const key = r.id || `${r.name}|${r.timestamp}`;
+    if (!seen.has(key)) seen.set(key, r);
+  }
+  return [...seen.values()]
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, GOOGLE_REVIEWS_MAX);
+}
+
+// New reviews always land on PAGE 1 (newest-first), so each refresh only needs
+// page 1 — we merge any new 5-star-with-text reviews into the kept list of 6.
+// Deeper pages are only walked while the list is still short (first-time seed).
+async function refreshGoogleReviews(forceFresh = false) {
+  const current = googleReviewsCache?.data?.reviews || [];
+
+  let json = await fetchSerpReviewPage(null, forceFresh); // page 1 (newest)
+  let merged = mergeGoogleReviews(
+    current,
+    await filterGoogleReviewsForDisplay(extractGoogleFiveStarWithText(json)),
+  );
+
+  let pageToken = json.serpapi_pagination?.next_page_token || null;
+  let page = 1;
+  while (
+    merged.length < GOOGLE_REVIEWS_MAX &&
+    pageToken &&
+    page < GOOGLE_REVIEWS_SEED_PAGES
+  ) {
+    json = await fetchSerpReviewPage(pageToken, forceFresh);
+    merged = mergeGoogleReviews(
+      merged,
+      await filterGoogleReviewsForDisplay(extractGoogleFiveStarWithText(json)),
+    );
+    pageToken = json.serpapi_pagination?.next_page_token || null;
+    page += 1;
+  }
+
+  googleReviewsCache = { data: { reviews: merged }, timestamp: Date.now() };
+  return merged;
+}
+
+// Collapse concurrent refreshes into one — SerpApi calls are quota-metered, so
+// duplicate in-flight pulls are worse here than they are for Momence.
+let googleRefreshInFlight = null;
+
+function refreshGoogleReviewsOnce(forceFresh = false) {
+  if (!googleRefreshInFlight) {
+    googleRefreshInFlight = refreshGoogleReviews(forceFresh).finally(() => {
+      googleRefreshInFlight = null;
+    });
+  }
+  return googleRefreshInFlight;
+}
+
+app.get("/api/google-reviews", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  // No key configured yet — return an empty list so the panel just hides and
+  // the board skips straight past that phase of the rotation.
+  if (!SERPAPI_API_KEY) {
+    return res.json({ reviews: [] });
+  }
+
+  try {
+    if (
+      googleReviewsCache &&
+      Date.now() - googleReviewsCache.timestamp < GOOGLE_REVIEWS_TTL_MS
+    ) {
+      return res.json(googleReviewsCache.data);
+    }
+
+    const reviews = await refreshGoogleReviewsOnce();
+    return res.json({ reviews });
+  } catch (error) {
+    console.error("api/google-reviews error:", error.message);
+    // Serve stale cache rather than breaking the panel on a transient blip.
+    if (googleReviewsCache) {
+      return res.json(googleReviewsCache.data);
+    }
+    return res.status(502).json({ reviews: [], error: error.message });
+  }
+});
+
+// API: OPTIONAL manual refresh. Forces a live scrape and merges anything new
+// into the kept list. Open in a browser; reports how many are on screen.
+// NOTE: each call spends SerpApi quota — don't put this on a timer.
+app.get("/api/refresh-google-reviews", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  if (!SERPAPI_API_KEY) {
+    return res.status(400).json({ error: "SERPAPI_API_KEY is not set" });
+  }
+
+  try {
+    const reviews = await refreshGoogleReviewsOnce(true);
+    return res.json({
+      success: true,
+      count: reviews.length,
+      dataId: resolvedGooglePlaceId,
+      reviews,
+    });
+  } catch (error) {
+    console.error("api/refresh-google-reviews error:", error.message);
     return res.status(502).json({ error: error.message });
   }
 });
