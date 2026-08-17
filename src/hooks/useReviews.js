@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/api";
-import { isMessageSafe } from "../utils/messageFilter";
+import { isReviewTextSafe } from "../utils/messageFilter";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Studio PLT member reviews.
@@ -36,9 +36,16 @@ export default function useReviews() {
           .filter((r) => (r.rating ?? 0) === 5 && r.text && r.text.trim())
           // Defence-in-depth: the backend already moderates every review
           // before it reaches this endpoint. This client-side pass re-runs
-          // the deterministic word filter so nothing unsafe can render even
-          // from a stale or edge-case payload.
-          .filter((r) => isMessageSafe(r.text) && isMessageSafe(r.name || ""));
+          // the SAME deterministic word filter the server applied, so nothing
+          // unsafe can render from a stale or edge-case payload.
+          //
+          // It must be isReviewTextSafe, not isMessageSafe — the latter is the
+          // stricter quote-submission filter, and re-running it here silently
+          // dropped reviews the server had already approved (any review saying
+          // "absolutely" or "abs" was discarded). See messageFilter.js.
+          .filter(
+            (r) => isReviewTextSafe(r.text) && isReviewTextSafe(r.name || ""),
+          );
 
         if (!cancelled) setReviews(safe);
       } catch (err) {

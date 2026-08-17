@@ -73,6 +73,58 @@ function isMessageSafe(text = "") {
   return !bannedWords.some((word) => cleanText.includes(word));
 }
 
+/* Review text check — deliberately NOT isMessageSafe.
+
+   isMessageSafe strips every space before substring-matching, which is right
+   for the quote submission box (someone may try to sneak "f u c k" past it)
+   but wrong for reviews: ordinary words collide with banned ones once the
+   spaces are gone.
+
+     "who really ..."  → "whoreally" → contains "whore"
+     "absolutely"/"abs" → contains "bs"   (on the client's longer list)
+
+   That silently dropped genuine 5-star reviews. Reviewers aren't gaming a
+   filter, and OpenAI moderation sits behind this, so match whole words and
+   flag one only if it STARTS with a profanity — still catches "fucking",
+   "shitty", "dickhead".
+
+   NOTE: intentionally duplicated from src/utils/messageFilter.js
+   (isReviewTextSafe) rather than imported, so the server has no dependency
+   on src/ at runtime. Keep the two lists in step. */
+const coreProfanity = [
+  "fuck",
+  "fuk",
+  "shit",
+  "bitch",
+  "bastard",
+  "asshole",
+  "arsehole",
+  "ashole",
+  "cunt",
+  "dick",
+  "piss",
+  "slut",
+  "whore",
+];
+
+function isReviewTextSafe(text = "") {
+  const words = String(text)
+    .toLowerCase()
+    .replace(/[@4]/g, "a")
+    .replace(/[!1|]/g, "i")
+    .replace(/[$5]/g, "s")
+    .replace(/[0]/g, "o")
+    .replace(/[3]/g, "e")
+    .replace(/[7]/g, "t")
+    .split(/[^a-z]+/)
+    .filter(Boolean)
+    .map((word) => word.replace(/(.)\1+/g, "$1"));
+
+  return !words.some((word) =>
+    coreProfanity.some((bad) => word.startsWith(bad.replace(/(.)\1+/g, "$1"))),
+  );
+}
+
 async function isAiMessageSafe(text = "") {
   const cleanText = String(text || "").trim();
 
@@ -516,8 +568,8 @@ async function isReviewSafeToShow(review) {
   const key = review.id || `${name}|${review.timestamp}`;
   if (momenceModerationCache.has(key)) return momenceModerationCache.get(key);
 
-  // Layer 1 — deterministic word filter
-  if (!isMessageSafe(text) || !isMessageSafe(name)) {
+  // Layer 1 — deterministic word filter (word-boundary aware, see above)
+  if (!isReviewTextSafe(text) || !isReviewTextSafe(name)) {
     console.log(`[reviews] word filter rejected review by "${name}"`);
     momenceModerationCache.set(key, false);
     return false;
@@ -832,8 +884,8 @@ async function isGoogleReviewSafeToShow(review) {
   const key = review.id || `${name}|${review.timestamp}`;
   if (googleModerationCache.has(key)) return googleModerationCache.get(key);
 
-  // Layer 1 — deterministic word filter (free, instant)
-  if (!isMessageSafe(text) || !isMessageSafe(name)) {
+  // Layer 1 — deterministic word filter (word-boundary aware, see above)
+  if (!isReviewTextSafe(text) || !isReviewTextSafe(name)) {
     console.log(`[google-reviews] L1 word-filter rejected review by "${name}"`);
     googleModerationCache.set(key, false);
     return false;

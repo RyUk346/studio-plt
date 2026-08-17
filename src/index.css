@@ -33,23 +33,27 @@ body {
 
 /* Optional: Pause on hover so users can read it */
 
-/* ── Left panel: leaderboard ⇄ reviews loop ───────────────────────────────
-   The side panel alternates between UI 1 (leaderboard) and UI 2 (member
-   reviews). Whichever view comes on screen rises from below and fades in
-   for a smooth hand-off. */
-@keyframes viewFadeUp {
+/* ── Left panel: leaderboard ⇄ reviews rotation ───────────────────────────
+   Whichever view comes on screen slides in from the left and fades up.
+
+   ⚠️ Do NOT put .panel-enter on the leaderboard wrapper. Its tier cards are
+   very low alpha (bg-[#FFD70014]) sitting on backdrop-blur, and an animated
+   ancestor washes their colours out. The leaderboard gets its left-to-right
+   motion from its own per-card stagger instead (see SlidingLeaderboard.jsx),
+   which animates the cards themselves rather than a container. */
+@keyframes panelSlideInLeft {
   0% {
-    transform: translateY(32px);
+    transform: translateX(-32px);
     opacity: 0;
   }
   100% {
-    transform: translateY(0);
+    transform: translateX(0);
     opacity: 1;
   }
 }
 
-.view-enter {
-  animation: viewFadeUp 700ms cubic-bezier(0.25, 0.9, 0.3, 1) both;
+.panel-enter {
+  animation: panelSlideInLeft 600ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 /* Vertical review carousel track. The step animation itself is driven from

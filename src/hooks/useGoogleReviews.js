@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../utils/api";
-import { isMessageSafe } from "../utils/messageFilter";
+import { isReviewTextSafe } from "../utils/messageFilter";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Public Google reviews.
@@ -36,9 +36,13 @@ export default function useGoogleReviews() {
         const safe = (json.reviews || [])
           .filter((r) => (r.rating ?? 0) === 5 && r.text && r.text.trim())
           // Defence-in-depth: the backend already runs all three moderation
-          // layers. This client-side pass re-runs the deterministic word
-          // filter so nothing unsafe can render even from a stale payload.
-          .filter((r) => isMessageSafe(r.text) && isMessageSafe(r.name || ""));
+          // layers. This re-runs the SAME deterministic word filter the
+          // server applied, so nothing unsafe can render from a stale payload.
+          // Must be isReviewTextSafe, not the stricter quote filter — see the
+          // note in messageFilter.js.
+          .filter(
+            (r) => isReviewTextSafe(r.text) && isReviewTextSafe(r.name || ""),
+          );
 
         if (!cancelled) setReviews(safe);
       } catch (err) {

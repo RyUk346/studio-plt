@@ -16,24 +16,22 @@ import { getClassTimingState } from "../utils/date";
 import WeatherWidget from "./WeatherWidget";
 import useWeather from "../hooks/useWeather";
 import { PiGlobeXBold } from "react-icons/pi";
+import { FcGoogle } from "react-icons/fc";
 
 /* Side-panel loop timings. The panel cycles
      leaderboard → member reviews → leaderboard → Google reviews
    (see utils/panelRotation.js). Each phase stays on screen just long enough
    to play through its own content once, then hands over. */
-const REVIEW_STEP_MS = 6000; // pause per review card
+// Each review sits at the top of the carousel for 5s. Both sources are
+// capped at 6 reviews server-side (MOMENCE_REVIEWS_MAX / GOOGLE_REVIEWS_MAX),
+// so a full review phase runs 6 × 5s + the tail ≈ 32.5s.
+const REVIEW_STEP_MS = 5000; // pause per review card
 const REVIEW_TAIL_MS = 2500; // rest on the last review before handing over
 
-const PANEL_HEADINGS = {
-  reviews: {
-    heading: "Life at Pilates",
-    subheading: "What our community is saying",
-  },
-  google: {
-    heading: "Google Reviews",
-    subheading: "What people say about us on Google",
-  },
-};
+// Both review phases share a heading; the Google phase just adds the Google
+// mark so it's clear where those reviews came from.
+const REVIEWS_HEADING = "Life at Pilates";
+const REVIEWS_SUBHEADING = "What our community is saying";
 
 export default function ScheduleBoard() {
   const [isOnline, setIsOnline] = useState(
@@ -111,32 +109,51 @@ export default function ScheduleBoard() {
     ? rotation[phaseIndex % rotation.length]
     : "leaderboard";
 
-  useEffect(() => {
-    if (rotation.length <= 1) return; // nothing to rotate to
+  /* Handoff is EVENT-DRIVEN: whichever view is on screen calls
+     onCycleComplete when it has genuinely finished showing its content.
+     The board used to predict the duration instead (pageCount × interval),
+     but that clock and the child's own clock drifted apart — the leaderboard
+     would wrap back to page 1 and sit there before the switch finally
+     landed. Letting the child announce it keeps them exactly in step. */
+  const advancePhase = useCallback(() => {
+    setPhaseIndex((prev) => prev + 1); // modulo applied on read
+  }, []);
 
-    const duration =
+  // Only hand the callback down when there's somewhere else to go. With a
+  // single phase the child loops on its own instead.
+  const handleCycleComplete = rotation.length > 1 ? advancePhase : undefined;
+
+  /* Safety net only. If a child somehow never reports (an error mid-render,
+     say), a shop-window screen must not freeze on one view forever. Sized
+     well past the expected duration so it never fires during normal use —
+     the event above always wins. */
+  useEffect(() => {
+    if (rotation.length <= 1) return;
+
+    const expected =
       phase === "leaderboard"
         ? Math.max(1, leaderPageCount) * SLIDE_INTERVAL_MS
-        : (phase === "google" ? googleReviews.length : reviews.length) *
+        : Math.max(
+            1,
+            phase === "google" ? googleReviews.length : reviews.length,
+          ) *
             REVIEW_STEP_MS +
           REVIEW_TAIL_MS;
 
-    const timer = setTimeout(() => {
-      setPhaseIndex((prev) => (prev + 1) % rotation.length);
-    }, duration);
+    const timer = setTimeout(advancePhase, expected * 2 + 10000);
 
     return () => clearTimeout(timer);
   }, [
-    rotation,
+    rotation.length,
     phase,
     phaseIndex,
     leaderPageCount,
     reviews.length,
     googleReviews.length,
+    advancePhase,
   ]);
 
   const showingReviews = phase === "reviews" || phase === "google";
-  const panelHeading = PANEL_HEADINGS[phase];
 
   const [now, setNow] = useState(new Date());
 
@@ -207,11 +224,14 @@ export default function ScheduleBoard() {
               backdrop-blur samples and visibly shifts the leaderboard's
               colours. */}
           <div className="border-b border-white/50 pb-4 max-[1750px]:pb-2">
-            <h2 className="text-4xl font-bold tracking-wide max-[1750px]:text-2xl">
-              {panelHeading ? panelHeading.heading : leaderboardHeading}
+            <h2 className="flex items-center gap-2 text-4xl font-bold tracking-wide max-[1750px]:gap-1.5 max-[1750px]:text-2xl">
+              {phase === "google" && (
+                <FcGoogle className="shrink-0" aria-label="Google" />
+              )}
+              {showingReviews ? REVIEWS_HEADING : leaderboardHeading}
             </h2>
             <p className="mt-1 text-lg text-white/60 font-semibold max-[1750px]:text-sm">
-              {panelHeading ? panelHeading.subheading : leaderboardSubheading}
+              {showingReviews ? REVIEWS_SUBHEADING : leaderboardSubheading}
             </p>
           </div>
 
@@ -238,6 +258,8 @@ export default function ScheduleBoard() {
                 key={phase}
                 reviews={phase === "google" ? googleReviews : reviews}
                 stepMs={REVIEW_STEP_MS}
+                tailMs={REVIEW_TAIL_MS}
+                onCycleComplete={handleCycleComplete}
               />
             </div>
           ) : (
@@ -256,6 +278,7 @@ export default function ScheduleBoard() {
                   leaders={leaders}
                   milestones={milestones}
                   onPageCount={handleLeaderPageCount}
+                  onCycleComplete={handleCycleComplete}
                 />
               )}
             </div>

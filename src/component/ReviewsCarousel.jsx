@@ -22,25 +22,35 @@ import { timeAgo } from "../utils/date";
    board's hooks, so unmounting never interrupts the refresh.
 
    Props:
-   - reviews → the moderated 5-star reviews to show
-   - stepMs  → pause per step, driven by the board (REVIEW_STEP_MS)
+   - reviews         → the moderated 5-star reviews to show
+   - stepMs          → pause per step, driven by the board (REVIEW_STEP_MS)
+   - tailMs          → extra rest on the last card before handing over
+   - onCycleComplete → fired once every review has had its turn at the top.
+                       Like the leaderboard, the carousel announces that it
+                       has finished rather than letting the board predict it
+                       from `reviews.length × stepMs` — two clocks drift.
+                       Omit it and the carousel loops on its own.
    ────────────────────────────────────────────────────────────────────────── */
 const STEP_TRANSITION_MS = 1400; // silky 1.4s glide per step
 // Symmetric ease-in-out: starts gently, cruises, settles gently — much
 // smoother on a big in-store screen than a sharp ease-out.
 const STEP_EASING = "cubic-bezier(0.45, 0.05, 0.25, 1)";
 
-export default function ReviewsCarousel({ reviews = [], stepMs = 6000 }) {
+export default function ReviewsCarousel({
+  reviews = [],
+  stepMs = 6000,
+  tailMs = 0,
+  onCycleComplete,
+}) {
   // Carousel position: index of the card currently at the top of the viewport.
   const [step, setStep] = useState(0);
   const [offset, setOffset] = useState(0);
   const trackRef = useRef(null);
 
   // Advance the carousel one card at a time.
-  // Repeat is OFF: it stops once the last review is at the top.
   useEffect(() => {
-    if (reviews.length <= 1) return;
-    if (step >= reviews.length - 1) return; // reached the end — stop stepping
+    if (!reviews.length) return;
+    if (step >= reviews.length - 1) return; // on the last card — see below
 
     const timer = setTimeout(() => {
       setStep((prev) => Math.min(prev + 1, reviews.length - 1));
@@ -48,6 +58,23 @@ export default function ReviewsCarousel({ reviews = [], stepMs = 6000 }) {
 
     return () => clearTimeout(timer);
   }, [step, reviews.length, stepMs]);
+
+  // Last card has had its turn → the cycle is done. Hand back to the board
+  // if it's driving a rotation, otherwise loop back to the top.
+  useEffect(() => {
+    if (!reviews.length) return;
+    if (step < reviews.length - 1) return; // not finished yet
+
+    const timer = setTimeout(() => {
+      if (onCycleComplete) {
+        onCycleComplete();
+        return;
+      }
+      setStep(0);
+    }, stepMs + tailMs);
+
+    return () => clearTimeout(timer);
+  }, [step, reviews.length, stepMs, tailMs, onCycleComplete]);
 
   // Measure how far the track must slide so card[step] sits at the top.
   // Measured from the DOM (offsetTop) so cards can have natural heights.
@@ -124,7 +151,7 @@ export default function ReviewsCarousel({ reviews = [], stepMs = 6000 }) {
   };
 
   return (
-    <div className="view-enter flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="panel-enter flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {/* Carousel track: the card list is rendered ONCE — repeat is off,
             so there is no wrap-around and no duplicate copy is needed. */}

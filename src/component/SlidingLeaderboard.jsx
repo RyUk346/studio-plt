@@ -69,14 +69,21 @@ function getTier(visits = 0, milestones = {}) {
 };
 }
 
-/* onPageCount reports how many pages there are, so the board can hold UI 1
-   on screen for exactly one full cycle before looping to the reviews panel.
-   The board unmounts this component while reviews are showing, so paging
-   naturally pauses and restarts from page 1 when it comes back. */
+/* Props:
+   - onCycleComplete → fired once every page has had its full turn on screen.
+                       This is what hands control back to the board, rather
+                       than the board guessing the duration. Omit it and the
+                       leaderboard just loops on its own.
+   - onPageCount     → number of pages, used only for the board's safety
+                       timeout. Not used for the handoff itself.
+
+   The board unmounts this component while a reviews phase is showing, so
+   paging pauses and restarts from page 1 when it comes back. */
 export default function SlidingLeaderboard({
   leaders,
   milestones,
   onPageCount,
+  onCycleComplete,
 }) {
   const pages = useMemo(() => {
     const chunks = [];
@@ -96,27 +103,63 @@ for (let i = 0; i < clubMembers.length; i += ITEMS_PER_PAGE) {
   }, [leaders, milestones]);
 
   const [pageIndex, setPageIndex] = useState(0);
-  const [animateCards, setAnimateCards] = useState(true);
+  // Starts false so the cards slide in on mount. Starting true would render
+  // them in their final position for one frame before the entrance effect
+  // below yanked them back off-screen — a visible flash each time the
+  // leaderboard comes back on screen.
+  const [animateCards, setAnimateCards] = useState(false);
 
-  // Let the board size UI 1's on-screen time to the number of pages.
+  /* The member list is live — useLeaderboard re-polls every 60s, so pages can
+     appear or disappear while this component is on screen.
+
+     Growing is handled naturally: pages.length is a dependency of the advance
+     effect below, so a longer list simply means more pages to get through
+     before we hand over.
+
+     Shrinking needs this clamp. If the list drops from 4 pages to 2 while
+     we're showing page 4, the track would scroll to -300% with only two pages
+     rendered and the panel would go blank. Derived rather than stored so
+     there's no extra render pass. */
+  const safePageIndex = pages.length
+    ? Math.min(pageIndex, pages.length - 1)
+    : 0;
+
+  // Let the board size its safety timeout to the number of pages.
   useEffect(() => {
     onPageCount?.(pages.length);
   }, [pages.length, onPageCount]);
 
+  /* Page advance, one timer per page rather than a free-running interval.
+     When the LAST page has had its full turn we report upwards instead of
+     wrapping, so the board can hand over to the next phase at exactly the
+     moment the leaderboard finishes. Previously the board predicted this
+     with `pageCount × SLIDE_INTERVAL_MS`; that clock and this one drifted,
+     so the leaderboard sometimes wrapped back to page 1 and sat there
+     before the switch finally landed. */
   useEffect(() => {
-    if (pages.length <= 1) return;
+    if (!pages.length) return;
 
-    const interval = setInterval(() => {
+    const timer = setTimeout(() => {
+      const isLastPage = safePageIndex >= pages.length - 1;
+
+      if (isLastPage) {
+        // Board is driving a rotation → hand back. Otherwise loop forever,
+        // which is what this component does when used on its own.
+        if (onCycleComplete) {
+          onCycleComplete();
+          return;
+        }
+        setAnimateCards(false);
+        setTimeout(() => setPageIndex(0), 100);
+        return;
+      }
+
       setAnimateCards(false);
-
-      setTimeout(() => {
-        setPageIndex((prev) => (prev + 1) % pages.length);
-        setAnimateCards(true);
-      }, 100);
+      setTimeout(() => setPageIndex(safePageIndex + 1), 100);
     }, SLIDE_INTERVAL_MS);
 
-    return () => clearInterval(interval);
-  }, [pages.length]);
+    return () => clearTimeout(timer);
+  }, [safePageIndex, pages.length, onCycleComplete]);
 
   useEffect(() => {
     setAnimateCards(false);
@@ -126,19 +169,19 @@ for (let i = 0; i < clubMembers.length; i += ITEMS_PER_PAGE) {
     }, 80);
 
     return () => clearTimeout(timeout);
-  }, [pageIndex]);
+  }, [safePageIndex]);
 
   return (
     <div className="relative h-full  mt-1 overflow-hidden">
       <div
         className="h-full transition-transform duration-700 ease-in-out"
-        style={{ transform: `translateY(-${pageIndex * 100}%)` }}
+        style={{ transform: `translateY(-${safePageIndex * 100}%)` }}
       >
         {pages.map((page, idx) => (
           <div key={idx} className="h-full space-y-3 max-[1750px]:space-y-1">
             {page.map((item, itemIndex) => {
               const tier = getTier(item.visits, milestones);
-              const isActivePage = idx === pageIndex;
+              const isActivePage = idx === safePageIndex;
 
               return (
                 <div
