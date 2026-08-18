@@ -726,7 +726,11 @@ const GOOGLE_PLACE_QUERY = process.env.GOOGLE_PLACE_QUERY || "Studio PLT Oadby";
 
 const GOOGLE_REVIEWS_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const GOOGLE_REVIEWS_MAX = 6; // 5-star reviews kept and shown
-const GOOGLE_REVIEWS_SEED_PAGES = 4; // max pages when first seeding the list
+// Max pages walked while the kept list is still short. Most Google ratings
+// are star-only, so finding 6 WITH text can mean digging well past page 1.
+// Only pages actually needed are fetched, so this costs quota only when the
+// list can't be filled sooner.
+const GOOGLE_REVIEWS_SEED_PAGES = 8;
 
 let googleReviewsCache = null; // { data: { reviews }, timestamp }
 let resolvedGooglePlaceId = GOOGLE_PLACE_ID; // filled in by the resolver below
@@ -807,21 +811,31 @@ function extractGoogleFiveStarWithText(json) {
   return out;
 }
 
-/* ---------------- Google review moderation (3-layer, fail-closed) --------
-   Unlike Momence reviews — which come from verified, paying members — anyone
-   with a Google account can post here, so these get the strict treatment:
+/* ---------------- Google review moderation -------------------------------
+   Two independent switches, because the three layers reject at wildly
+   different rates and only one of them was actually starving the panel:
 
-     Layer 1 — deterministic banned-word/leetspeak filter (isMessageSafe)
-     Layer 2 — OpenAI moderation endpoint            (isAiMessageSafe)
-     Layer 3 — gpt-4o-mini judge against a display policy (moderateGoogleReview)
+   Layer 1 — word filter        ON by default.  Blocks profanity. Google does
+                                NOT screen swearing, so without this a 5-star
+                                review saying "f***ing great" reaches the
+                                screen. Rejects rarely.
+   Layer 2 — OpenAI moderation  Always on. Free, catches genuinely harmful
+                                content. Rejects almost never.
+   Layer 3 — LLM judge          OFF by default. Throws out anything faintly
+                                backhanded or complaint-shaped, which is what
+                                cut the panel to 3 of 6. Re-enable with
+                                GOOGLE_REVIEWS_STRICT_MODERATION=true (this
+                                also switches to fail-CLOSED).
 
-   A 5-star RATING doesn't guarantee safe TEXT: people leave backhanded
-   remarks, complaints, or profanity under 5 stars.
-
-   Fail-CLOSED: only a review that explicitly clears all three layers is shown.
-   "unknown" verdicts (API down) hide the review but are NOT cached, so the
-   next refresh retries automatically.
+   Rejections don't cost slots: the seed loop keeps walking pages until it has
+   GOOGLE_REVIEWS_MAX clean reviews, so a blocked one is simply replaced by
+   the next good one down the list.
    ------------------------------------------------------------------------- */
+// Layer 1. Set GOOGLE_REVIEWS_WORD_FILTER=false to allow profanity through.
+const GOOGLE_WORD_FILTER = process.env.GOOGLE_REVIEWS_WORD_FILTER !== "false";
+// Layer 3 + fail-closed behaviour.
+const GOOGLE_STRICT_MODERATION =
+  process.env.GOOGLE_REVIEWS_STRICT_MODERATION === "true";
 const googleModerationCache = new Map(); // review key -> boolean (safe)
 
 const GOOGLE_REVIEW_MODERATION_PROMPT = `You are a strict content moderator for a public display screen at Studio PLT, a Pilates studio in Oadby, UK. You are given the text of a Google review that will be shown on a large in-studio monitor visible to everyone present, including children.
@@ -881,41 +895,59 @@ async function isGoogleReviewSafeToShow(review) {
   const name = String(review?.name || "").trim();
   if (!text) return false;
 
-  const key = review.id || `${name}|${review.timestamp}`;
+  // Policy is part of the cache key, so flipping either switch doesn't reuse
+  // verdicts reached under the other policy.
+  const policy = `${GOOGLE_WORD_FILTER ? "w" : "-"}${GOOGLE_STRICT_MODERATION ? "s" : "-"}`;
+  const key = `${policy}:${review.id || `${name}|${review.timestamp}`}`;
   if (googleModerationCache.has(key)) return googleModerationCache.get(key);
 
-  // Layer 1 — deterministic word filter (word-boundary aware, see above)
-  if (!isReviewTextSafe(text) || !isReviewTextSafe(name)) {
-    console.log(`[google-reviews] L1 word-filter rejected review by "${name}"`);
-    googleModerationCache.set(key, false);
-    return false;
+  // Layer 1 — word filter. Blocks profanity Google itself doesn't screen.
+  if (GOOGLE_WORD_FILTER) {
+    if (!isReviewTextSafe(text) || !isReviewTextSafe(name)) {
+      console.log(`[google-reviews] L1 word-filter rejected "${name}"`);
+      googleModerationCache.set(key, false);
+      return false;
+    }
   }
 
-  // Layer 2 — OpenAI moderation endpoint
+  // Layer 2 — OpenAI moderation. Always on.
   const aiSafe = await isAiMessageSafe(text);
   if (aiSafe === false) {
-    console.log(`[google-reviews] L2 AI moderation rejected review by "${name}"`);
+    console.log(`[google-reviews] L2 AI moderation rejected "${name}"`);
     googleModerationCache.set(key, false);
     return false;
   }
 
-  // Layer 3 — LLM judge against the studio display policy
-  const verdict = await moderateGoogleReview(text);
+  // Layer 3 — LLM judge. STRICT ONLY. This is the layer that was rejecting
+  // anything faintly backhanded and starving the panel.
+  if (GOOGLE_STRICT_MODERATION) {
+    const verdict = await moderateGoogleReview(text);
 
-  if (aiSafe === "unknown" || verdict.status === "unknown") {
-    // Moderation unavailable → hide for now, retry on the next refresh.
-    console.warn(`[google-reviews] moderation unavailable — holding "${key}"`);
-    return false;
+    if (aiSafe === "unknown" || verdict.status === "unknown") {
+      // Strict mode fails CLOSED: hide now, retry on the next refresh.
+      console.warn(`[google-reviews] moderation unavailable — holding "${key}"`);
+      return false;
+    }
+
+    const safe = verdict.status === "approved";
+    if (!safe) {
+      console.log(
+        `[google-reviews] L3 judge rejected "${name}" — ${verdict.reason || "no reason"}`,
+      );
+    }
+    googleModerationCache.set(key, safe);
+    return safe;
   }
 
-  const safe = verdict.status === "approved";
-  if (!safe) {
-    console.log(
-      `[google-reviews] L3 judge rejected review by "${name}" — ${verdict.reason || "no reason"}`,
-    );
+  // Relaxed mode fails OPEN: an OpenAI outage shouldn't empty the panel.
+  // Not cached, so it gets a real verdict on the next refresh.
+  if (aiSafe === "unknown") {
+    console.warn(`[google-reviews] moderation unavailable — showing "${key}"`);
+    return true;
   }
-  googleModerationCache.set(key, safe);
-  return safe;
+
+  googleModerationCache.set(key, true);
+  return true;
 }
 
 // Moderate a batch, preserving order. Sequential to stay gentle on rate
@@ -943,14 +975,39 @@ function mergeGoogleReviews(existing, incoming) {
 // New reviews always land on PAGE 1 (newest-first), so each refresh only needs
 // page 1 — we merge any new 5-star-with-text reviews into the kept list of 6.
 // Deeper pages are only walked while the list is still short (first-time seed).
+/* Funnel counters from the last refresh. When the panel isn't full this is
+   what tells you WHY — not enough reviews on the listing, too few with
+   written text, or moderation rejecting them. Surfaced by
+   /api/refresh-google-reviews and logged after every refresh. */
+let googleReviewsStats = null;
+
 async function refreshGoogleReviews(forceFresh = false) {
   const current = googleReviewsCache?.data?.reviews || [];
+  const stats = {
+    wordFilter: GOOGLE_WORD_FILTER,
+    llmJudge: GOOGLE_STRICT_MODERATION,
+    pagesFetched: 0,
+    reviewsSeen: 0,
+    fiveStarWithText: 0,
+    rejectedByModeration: 0,
+    ranOutOfPages: false,
+  };
+
+  const takePage = async (json) => {
+    stats.pagesFetched += 1;
+    stats.reviewsSeen += (json.reviews || []).length;
+
+    const candidates = extractGoogleFiveStarWithText(json);
+    stats.fiveStarWithText += candidates.length;
+
+    const safe = await filterGoogleReviewsForDisplay(candidates);
+    stats.rejectedByModeration += candidates.length - safe.length;
+
+    return safe;
+  };
 
   let json = await fetchSerpReviewPage(null, forceFresh); // page 1 (newest)
-  let merged = mergeGoogleReviews(
-    current,
-    await filterGoogleReviewsForDisplay(extractGoogleFiveStarWithText(json)),
-  );
+  let merged = mergeGoogleReviews(current, await takePage(json));
 
   let pageToken = json.serpapi_pagination?.next_page_token || null;
   let page = 1;
@@ -960,12 +1017,31 @@ async function refreshGoogleReviews(forceFresh = false) {
     page < GOOGLE_REVIEWS_SEED_PAGES
   ) {
     json = await fetchSerpReviewPage(pageToken, forceFresh);
-    merged = mergeGoogleReviews(
-      merged,
-      await filterGoogleReviewsForDisplay(extractGoogleFiveStarWithText(json)),
-    );
+    merged = mergeGoogleReviews(merged, await takePage(json));
     pageToken = json.serpapi_pagination?.next_page_token || null;
     page += 1;
+  }
+
+  // Distinguish "Google has no more reviews" from "we hit our own page cap".
+  stats.ranOutOfPages = !pageToken;
+  stats.kept = merged.length;
+  googleReviewsStats = stats;
+
+  if (merged.length < GOOGLE_REVIEWS_MAX) {
+    console.warn(
+      `[google-reviews] only ${merged.length}/${GOOGLE_REVIEWS_MAX} slots filled — ` +
+        `scanned ${stats.reviewsSeen} reviews over ${stats.pagesFetched} page(s); ` +
+        `${stats.fiveStarWithText} were 5-star with text; ` +
+        `${stats.rejectedByModeration} rejected by moderation ` +
+        `(wordFilter=${stats.wordFilter}, llmJudge=${stats.llmJudge}); ` +
+        (stats.ranOutOfPages
+          ? "reached the end of the listing."
+          : `stopped at the ${GOOGLE_REVIEWS_SEED_PAGES}-page cap — raise GOOGLE_REVIEWS_SEED_PAGES to dig deeper.`),
+    );
+  } else {
+    console.log(
+      `[google-reviews] filled ${merged.length}/${GOOGLE_REVIEWS_MAX} from ${stats.pagesFetched} page(s)`,
+    );
   }
 
   googleReviewsCache = { data: { reviews: merged }, timestamp: Date.now() };
@@ -1029,7 +1105,10 @@ app.get("/api/refresh-google-reviews", async (req, res) => {
     return res.json({
       success: true,
       count: reviews.length,
+      target: GOOGLE_REVIEWS_MAX,
       dataId: resolvedGooglePlaceId,
+      // Funnel breakdown — if count < target, this says why.
+      stats: googleReviewsStats,
       reviews,
     });
   } catch (error) {
