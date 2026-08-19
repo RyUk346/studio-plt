@@ -231,7 +231,7 @@ export default function ScheduleBoard() {
             <h2
               className={`flex items-center gap-2 font-bold tracking-wide max-[1750px]:gap-1.5 ${
                 showingReviews
-                  ? "text-2xl max-[1750px]:text-lg"
+                  ? "text-2xl max-[1750px]:text-[16px]"
                   : "text-4xl max-[1750px]:text-2xl"
               }`}
             >
