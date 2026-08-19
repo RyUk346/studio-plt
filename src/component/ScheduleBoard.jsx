@@ -30,8 +30,8 @@ const REVIEW_TAIL_MS = 2500; // rest on the last review before handing over
 
 // Both review phases share a heading; the Google phase just adds the Google
 // mark so it's clear where those reviews came from.
-const REVIEWS_HEADING = "Life at Pilates";
-const REVIEWS_SUBHEADING = "What our community is saying";
+const REVIEWS_HEADING = "Our Growing Community";
+const REVIEWS_SUBHEADING = "";
 
 export default function ScheduleBoard() {
   const [isOnline, setIsOnline] = useState(
@@ -224,7 +224,17 @@ export default function ScheduleBoard() {
               backdrop-blur samples and visibly shifts the leaderboard's
               colours. */}
           <div className="border-b border-white/50 pb-4 max-[1750px]:pb-2">
-            <h2 className="flex items-center gap-2 text-4xl font-bold tracking-wide max-[1750px]:gap-1.5 max-[1750px]:text-2xl">
+            {/* One <h2> serves both phases, so the size has to be per-phase —
+                a single class here shrinks the leaderboard heading too.
+                Both keep the board's max-[1750px] scaling: on the in-store
+                screen that's 2xl for the leaderboard, lg for reviews. */}
+            <h2
+              className={`flex items-center gap-2 font-bold tracking-wide max-[1750px]:gap-1.5 ${
+                showingReviews
+                  ? "text-2xl max-[1750px]:text-lg"
+                  : "text-4xl max-[1750px]:text-2xl"
+              }`}
+            >
               {phase === "google" && (
                 <FcGoogle className="shrink-0" aria-label="Google" />
               )}
