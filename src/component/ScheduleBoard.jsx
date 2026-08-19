@@ -29,9 +29,10 @@ const REVIEW_STEP_MS = 5000; // pause per review card
 const REVIEW_TAIL_MS = 2500; // rest on the last review before handing over
 
 // Both review phases share a heading; the Google phase just adds the Google
-// mark so it's clear where those reviews came from.
+// mark so it's clear where those reviews came from. Review phases have no
+// subheading — the <p> is skipped entirely rather than rendered empty, which
+// would still reserve a line box and leave a gap under the heading.
 const REVIEWS_HEADING = "Our Growing Community";
-const REVIEWS_SUBHEADING = "";
 
 export default function ScheduleBoard() {
   const [isOnline, setIsOnline] = useState(
@@ -240,9 +241,15 @@ export default function ScheduleBoard() {
               )}
               {showingReviews ? REVIEWS_HEADING : leaderboardHeading}
             </h2>
-            <p className="mt-1 text-lg text-white/60 font-semibold max-[1750px]:text-sm">
-              {showingReviews ? REVIEWS_SUBHEADING : leaderboardSubheading}
-            </p>
+            {/* Review phases have no subheading. Rendered conditionally
+                rather than left empty — an empty <p> still reserves a line
+                box, which left a gap under the review heading. Also covers
+                the leaderboard having no subheading configured. */}
+            {!showingReviews && leaderboardSubheading ? (
+              <p className="mt-1 text-lg text-white/60 font-semibold max-[1750px]:text-sm">
+                {leaderboardSubheading}
+              </p>
+            ) : null}
           </div>
 
           {/* Only the active phase is mounted, so each one restarts from the
